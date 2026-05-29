@@ -6,72 +6,64 @@ import pandas as pd
 # --- CONFIGURACIÓN ---
 st.set_page_config(page_title="Finanzas Pro Stats", page_icon="💰", layout="centered")
 
-# --- DISEÑO ULTRA-MÓVIL INTEGRADO (Sin alterar lógica) ---
+# --- DISEÑO HÍBRIDO INTELIGENTE (PC / MÓVIL) ---
 st.markdown("<style>#MainMenu {visibility: hidden;} footer {visibility: hidden;} header {visibility: hidden;}</style>", unsafe_allow_html=True)
 st.markdown("<style>.stApp { background-color: #121212 !important; color: #e0e0e0 !important; }</style>", unsafe_allow_html=True)
 
-# Compactación extrema de contenedores para pantallas móviles
+# Estilos responsivos adaptativos según el tamaño de la pantalla
 st.markdown("""
 <style>
-    /* Reducción de márgenes globales del contenedor */
-    .block-container { 
-        padding-top: 0.5rem !important; 
-        padding-bottom: 0.5rem !important; 
-        padding-left: 0.5rem !important; 
-        padding-right: 0.5rem !important; 
+    /* --- CONFIGURACIÓN PARA PC / ESCRITORIO --- */
+    .block-container { padding-top: 2rem !important; padding-bottom: 2rem !important; }
+    .stTabs [data-baseweb="tab-list"] { gap: 10px !important; }
+    .stTabs [data-baseweb="tab"] { padding: 12px 16px !important; font-size: 1rem !important; }
+    .stButton button { min-height: 40px !important; border-radius: 10px !important; }
+    .contenedor-bancos { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+
+    /* --- REGLES ESPECÍFICAS PARA CELULARES (Pantallas menores a 768px) --- */
+    @media (max-width: 768px) {
+        .block-container { 
+            padding-top: 0.6rem !important; 
+            padding-bottom: 0.6rem !important; 
+            padding-left: 0.5rem !important; 
+            padding-right: 0.5rem !important; 
+        }
+        .stTabs [data-baseweb="tab-list"] { gap: 2px !important; width: 100% !important; }
+        .stTabs [data-baseweb="tab"] { 
+            padding: 8px 4px !important; 
+            font-size: 0.75rem !important; 
+            flex-grow: 1 !important; 
+            text-align: center !important; 
+        }
+        .stButton button { min-height: 44px !important; border-radius: 12px !important; font-size: 0.88rem !important; }
+        
+        /* Fuerza al teclado exprés a ordenarse en rejilla de 3 columnas en celular */
+        [data-testid="stHorizontalBlock"] {
+            display: grid !important;
+            grid-template-columns: repeat(3, 1fr) !important;
+            gap: 6px !important;
+        }
+        /* El último botón (🧹 Limpiar Valor) ocupa todo el ancho inferior en celular */
+        [data-testid="stHorizontalBlock"] > div:last-child {
+            grid-column: span 3 !important;
+        }
+        .contenedor-bancos { grid-template-columns: repeat(2, 1fr) !important; gap: 6px !important; }
     }
-    
-    /* Tabs nativos transformados en una barra de navegación móvil compacta */
-    .stTabs [data-baseweb="tab-list"] { 
-        gap: 2px !important; 
-        width: 100% !important;
-    }
-    .stTabs [data-baseweb="tab"] { 
-        padding-left: 6px !important; 
-        padding-right: 6px !important; 
-        padding-top: 10px !important;
-        padding-bottom: 10px !important;
-        font-size: 0.78rem !important; 
-        flex-grow: 1 !important;
-        text-align: center !important;
-    }
-    
-    /* Botones touch-friendly robustos */
-    .stButton button { 
-        min-height: 44px !important; 
-        border-radius: 12px !important; 
-        font-size: 0.9rem !important;
-    }
-    
-    /* Cuadrícula adaptativa inteligente para los botones del teclado exprés */
-    [data-testid="stHorizontalBlock"] {
-        display: grid !important;
-        grid-template-columns: repeat(3, 1fr) !important;
-        gap: 6px !important;
-    }
-    /* Excepción para que el botón "Borrar" ocupe toda la fila inferior en móvil */
-    [data-testid="stHorizontalBlock"] > div:last-child {
-        grid-column: span 3 !important;
-    }
-    
-    /* Quitar espacios vacíos que mete Streamlit entre componentes */
-    .element-container { margin-bottom: 0.4rem !important; }
 </style>
 """, unsafe_allow_html=True)
 
-# Estilo de tarjetas e historial optimizados
-st.markdown("<style>.tarjeta-saldo { background: linear-gradient(135deg, #1f4068 0%, #162447 100%); color: white !important; padding: 15px; border-radius: 14px; text-align: center; margin-bottom: 10px; border: 1px solid rgba(255,255,255,0.1);}</style>", unsafe_allow_html=True)
-st.markdown("<style>.tarjeta-saldo h3 {margin: 0 !important; font-size: 0.75rem !important; letter-spacing: 1px; opacity: 0.8; color: #f1faee !important;} .tarjeta-saldo h1 {margin: 3px 0 0 0 !important; font-size: 1.8rem !important; font-weight: 700 !important; color: #ffffff !important;}</style>", unsafe_allow_html=True)
+# Tarjetas visuales optimizadas
+st.markdown("<style>.tarjeta-saldo { background: linear-gradient(135deg, #1f4068 0%, #162447 100%); color: white !important; padding: 18px; border-radius: 14px; text-align: center; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.1);}</style>", unsafe_allow_html=True)
+st.markdown("<style>.tarjeta-saldo h3 {margin: 0 !important; font-size: 0.8rem !important; letter-spacing: 1px; opacity: 0.8; color: #f1faee !important;} .tarjeta-saldo h1 {margin: 4px 0 0 0 !important; font-size: 2rem !important; font-weight: 700 !important; color: #ffffff !important;}</style>", unsafe_allow_html=True)
 
-st.markdown("<style>.tarjeta-gastos { background: linear-gradient(135deg, #781d1d 0%, #4a0e0e 100%); color: white !important; padding: 15px; border-radius: 14px; text-align: center; margin-bottom: 10px; border: 1px solid rgba(255,255,255,0.1);}</style>", unsafe_allow_html=True)
-st.markdown("<style>.tarjeta-gastos h3 {margin: 0 !important; font-size: 0.75rem !important; letter-spacing: 1px; opacity: 0.8; color: #f1faee !important;} .tarjeta-gastos h1 {margin: 3px 0 0 0 !important; font-size: 1.6rem !important; font-weight: 700 !important; color: #ffffff !important;}</style>", unsafe_allow_html=True)
+st.markdown("<style>.tarjeta-gastos { background: linear-gradient(135deg, #781d1d 0%, #4a0e0e 100%); color: white !important; padding: 18px; border-radius: 14px; text-align: center; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.1);}</style>", unsafe_allow_html=True)
+st.markdown("<style>.tarjeta-gastos h3 {margin: 0 !important; font-size: 0.8rem !important; letter-spacing: 1px; opacity: 0.8; color: #f1faee !important;} .tarjeta-gastos h1 {margin: 4px 0 0 0 !important; font-size: 1.8rem !important; font-weight: 700 !important; color: #ffffff !important;}</style>", unsafe_allow_html=True)
 
-st.markdown("<style>.contenedor-bancos {display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; margin-bottom: 10px;}</style>", unsafe_allow_html=True)
-st.markdown("<style>.tarjeta-banco {background-color: #1b1b1b; border: 1px solid #2d2d2d; border-radius: 10px; padding: 8px; text-align: center;}</style>", unsafe_allow_html=True)
-st.markdown("<style>.tarjeta-banco p {margin: 0 !important; font-size: 0.65rem; opacity: 0.6; text-transform: uppercase; font-weight: bold;}</style>", unsafe_allow_html=True)
-st.markdown("<style>.tarjeta-banco h4 {margin: 2px 0 0 0 !important; font-size: 0.9rem; font-weight: 700; color: #457b9d !important;}</style>", unsafe_allow_html=True)
+st.markdown("<style>.tarjeta-banco {background-color: #1b1b1b; border: 1px solid #2d2d2d; border-radius: 10px; padding: 10px; text-align: center;}</style>", unsafe_allow_html=True)
+st.markdown("<style>.tarjeta-banco p {margin: 0 !important; font-size: 0.7rem; opacity: 0.6; text-transform: uppercase; font-weight: bold;}</style>", unsafe_allow_html=True)
+st.markdown("<style>.tarjeta-banco h4 {margin: 2px 0 0 0 !important; font-size: 1rem; font-weight: 700; color: #457b9d !important;}</style>", unsafe_allow_html=True)
 
-st.markdown("<style>.item-historial { background-color: #1b1b1b; padding: 10px 12px; border-radius: 8px; margin-bottom: 6px; border-left: 4px solid #ccc; font-family: monospace; font-size: 0.8rem;}</style>", unsafe_allow_html=True)
+st.markdown("<style>.item-historial { background-color: #1b1b1b; padding: 12px; border-radius: 8px; margin-bottom: 8px; border-left: 5px solid #ccc; font-family: monospace; font-size: 0.85rem;}</style>", unsafe_allow_html=True)
 st.markdown("<style>.ingreso-style { border-left-color: #2a9d8f !important; } .gasto-style { border-left-color: #e63946 !important; } .deuda-style { border-left-color: #f4a261 !important; } .pagada-style { border-left-color: #457b9d !important; } .meta-style { border-left-color: #a29bfe !important; } .transferencia-style { border-left-color: #6c757d !important; }</style>", unsafe_allow_html=True)
 
 # --- BASE DE DATOS ---
@@ -166,12 +158,12 @@ else:
     total_disponible = sum(saldos.values())
 
     # --- PANTALLA FIJA SUPERIOR ---
-    st.markdown(f'<div class="tarjeta-saldo"><h3>DISPONIBLE</h3><h1>${total_disponible:,}</h1></div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="tarjeta-saldo"><h3>DISPONIBLE GENERAL</h3><h1>${total_disponible:,} COP</h1></div>', unsafe_allow_html=True)
     cols_html = "".join([f'<div class="tarjeta-banco"><p>{b}</p><h4>${saldos[b]:,}</h4></div>' for b in BANCOS])
     st.markdown(f'<div class="contenedor-bancos">{cols_html}</div>', unsafe_allow_html=True)
 
-    # --- 📱 NAVEGACIÓN EN TABS (Súper limpio para celular) ---
-    tab_est, tab_hist, tab_mov, tab_deu, tab_met = st.tabs(["📈 Stats", "📊 Hist", "💸 Movs", "📌 Deudas", "🎯 Metas"])
+    # --- NAVEGACIÓN EN TABS RESPONSIVOS ---
+    tab_est, tab_hist, tab_mov, tab_deu, tab_met = st.tabs(["📈 Stats", "📊 Historial", "💸 Movimientos", "📌 Deudas", "🎯 Metas"])
 
     # --- SECCIÓN 1: ESTADÍSTICAS ---
     with tab_est:
@@ -180,7 +172,7 @@ else:
         total_gastado = 0
         if not df.empty and "Gasto" in df['tipo'].values:
             total_gastado = int(df[df['tipo'] == "Gasto"]['monto'].sum())
-        st.markdown(f'<div class="tarjeta-gastos"><h3>GASTOS ACUMULADOS</h3><h1>${total_gastado:,}</h1></div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="tarjeta-gastos"><h3>GASTOS ACUMULADOS</h3><h1>${total_gastado:,} COP</h1></div>', unsafe_allow_html=True)
         if total_gastado > 0:
             gastos_df = df[df['tipo'] == "Gasto"]
             resumen = gastos_df.groupby('cat')['monto'].sum()
@@ -191,18 +183,18 @@ else:
 
     # --- SECCIÓN 2: HISTORIAL COMPLETO ---
     with tab_hist:
-        st.write("### Transacciones")
+        st.write("### Lista de Transacciones")
         if len(hist) == 0: st.info("Historial vacío.")
         else:
             for h in reversed(hist):
                 if h['tipo'] == "Ingreso":
-                    st.markdown(f'<div class="item-historial ingreso-style"><b>+${h["monto"]:,}</b> ({h["banco"]})<br>{h["det"]}</div>', unsafe_allow_html=True)
+                    st.markdown(f'<div class="item-historial ingreso-style">📈 <b>Ingreso ({h["banco"]}):</b> +${h["monto"]:,} <br> 📝 {h["det"]}</div>', unsafe_allow_html=True)
                 elif h['tipo'] == "Meta":
-                    st.markdown(f'<div class="item-historial meta-style"><b>-${h["monto"]:,}</b> (Ahorro Meta)<br>🎯 {h["det"]} ({h["banco"]})</div>', unsafe_allow_html=True)
+                    st.markdown(f'<div class="item-historial meta-style">🎯 <b>Ahorro Meta ({h["banco"]}):</b> -${h["monto"]:,} <br> 🚀 Para: {h["det"]}</div>', unsafe_allow_html=True)
                 elif h['tipo'] == "Transferencia":
-                    st.markdown(f'<div class="item-historial transferencia-style"><b>🔄 ${h["monto"]:,}</b><br>{h["banco"]} ➡️ {h["cat"]}</div>', unsafe_allow_html=True)
+                    st.markdown(f'<div class="item-historial transferencia-style">🔄 <b>Transferencia:</b> ${h["monto"]:,} <br> 🏦 Desde {h["banco"]} hacia {h["cat"]}</div>', unsafe_allow_html=True)
                 else:
-                    st.markdown(f'<div class="item-historial gasto-style"><b>-${h["monto"]:,}</b> ({h["banco"]})<br>📁 {h["cat"]} | {h["det"]}</div>', unsafe_allow_html=True)
+                    st.markdown(f'<div class="item-historial gasto-style">📉 <b>Gasto ({h["banco"]}):</b> -${h["monto"]:,} <br> 📁 {h["cat"]} | {h["det"]}</div>', unsafe_allow_html=True)
             st.write("---")
             if st.button("🗑️ Resetear Datos y Cuentas", use_container_width=True):
                 for b in BANCOS:
@@ -215,20 +207,19 @@ else:
     with tab_mov:
         c1, c2, c3, c4 = st.columns(4)
         with c1:
-            if st.button("➕ Ing", key="btn_m_ing", use_container_width=True): st.session_state.modo = "ing"
+            if st.button("➕ Ingreso", key="btn_m_ing", use_container_width=True): st.session_state.modo = "ing"
         with c2:
-            if st.button("➖ Gas", key="btn_m_gas", use_container_width=True): st.session_state.modo = "gas"
+            if st.button("➖ Gasto", key="btn_m_gas", use_container_width=True): st.session_state.modo = "gas"
         with c3:
-            if st.button("🎯 Aho", key="btn_m_met", use_container_width=True): st.session_state.modo = "meta"
+            if st.button("🎯 Ahorro", key="btn_m_met", use_container_width=True): st.session_state.modo = "meta"
         with c4:
-            if st.button("🔄 Tra", key="btn_m_tra", use_container_width=True): st.session_state.modo = "trans"
+            if st.button("🔄 Transf.", key="btn_m_tra", use_container_width=True): st.session_state.modo = "trans"
         
         modo_actual = st.session_state.get('modo', 'ing')
         st.write("---")
         
         if modo_actual == "ing":
             st.write("### 📈 Añadir Fondos")
-            # Los sub-columnas ahora se ordenan de forma fluida en cuadrícula limpia en celular
             b1, b2, b3, b4, b5, b6, b_clr = st.columns(7)
             with b1:
                 if st.button("+2k", key="i_2k"): st.session_state.val_express_ing += 2000
@@ -387,7 +378,7 @@ else:
                     elif m_t > saldos[b_origen]: st.error("Saldo insuficiente.")
                     else: st.error("Monto inválido.")
 
-# --- SECCIÓN 4: DEUDAS ---
+    # --- SECCIÓN 4: DEUDAS ---
     with tab_deu:
         st.write("### 📌 Registro de Deudas")
         b1, b2, b3, b4, b5, b6, b_clr = st.columns(7)
@@ -440,7 +431,7 @@ else:
         if st.button("🗑️ Borrar Registro de Deudas", use_container_width=True):
             if os.path.exists(ARCH_DEUDAS): os.remove(ARCH_DEUDAS); st.rerun()
 
-# --- SECCIÓN 5: METAS ---
+    # --- SECCIÓN 5: METAS ---
     with tab_met:
         st.write("### 🎯 Metas de Ahorro")
         b1, b2, b3, b4, b5, b6, b_clr = st.columns(7)
