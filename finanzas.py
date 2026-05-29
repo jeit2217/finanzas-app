@@ -10,21 +10,18 @@ st.set_page_config(page_title="Finanzas Pro Stats", page_icon="💰", layout="ce
 st.markdown("<style>#MainMenu {visibility: hidden;} footer {visibility: hidden;} header {visibility: hidden;}</style>", unsafe_allow_html=True)
 st.markdown("<style>.stApp { background-color: #121212 !important; color: #e0e0e0 !important; }</style>", unsafe_allow_html=True)
 
-# Estilo de tarjetas (Disponibles)
+# Estilo de tarjetas
 st.markdown("<style>.tarjeta-saldo { background: linear-gradient(135deg, #1f4068 0%, #162447 100%); color: white !important; padding: 25px; border-radius: 16px; box-shadow: 0px 10px 25px rgba(0,0,0,0.15); text-align: center; margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.1);}</style>", unsafe_allow_html=True)
 st.markdown("<style>.tarjeta-saldo h3 {margin: 0 !important; font-size: 0.90rem !important; letter-spacing: 1.5px; opacity: 0.85; color: #f1faee !important;} .tarjeta-saldo h1 {margin: 8px 0 0 0 !important; font-size: 2.4rem !important; font-weight: 700 !important; color: #ffffff !important;}</style>", unsafe_allow_html=True)
 
-# Tarjeta de Gastos Totales
 st.markdown("<style>.tarjeta-gastos { background: linear-gradient(135deg, #781d1d 0%, #4a0e0e 100%); color: white !important; padding: 20px; border-radius: 16px; box-shadow: 0px 10px 25px rgba(0,0,0,0.15); text-align: center; margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.1);}</style>", unsafe_allow_html=True)
 st.markdown("<style>.tarjeta-gastos h3 {margin: 0 !important; font-size: 0.90rem !important; letter-spacing: 1.5px; opacity: 0.85; color: #f1faee !important;} .tarjeta-gastos h1 {margin: 8px 0 0 0 !important; font-size: 2.2rem !important; font-weight: 700 !important; color: #ffffff !important;}</style>", unsafe_allow_html=True)
 
-# Cuadrícula de Bancos Individuales
 st.markdown("<style>.contenedor-bancos {display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 25px;}</style>", unsafe_allow_html=True)
 st.markdown("<style>.tarjeta-banco {background-color: #1b1b1b; border: 1px solid #333; border-radius: 12px; padding: 12px; text-align: center; box-shadow: 0px 4px 10px rgba(0,0,0,0.15);}</style>", unsafe_allow_html=True)
 st.markdown("<style>.tarjeta-banco p {margin: 0 !important; font-size: 0.75rem; opacity: 0.7; text-transform: uppercase; font-weight: bold; letter-spacing: 0.5px;}</style>", unsafe_allow_html=True)
 st.markdown("<style>.tarjeta-banco h4 {margin: 5px 0 0 0 !important; font-size: 1.0rem; font-weight: 700; color: #457b9d !important;}</style>", unsafe_allow_html=True)
 
-# Historial e ítems estilizados
 st.markdown("<style>.item-historial { background-color: #1b1b1b; padding: 14px 18px; border-radius: 10px; margin-bottom: 10px; border-left: 6px solid #ccc; font-family: monospace; font-size: 0.95rem; box-shadow: 0px 4px 6px rgba(0,0,0,0.1);}</style>", unsafe_allow_html=True)
 st.markdown("<style>.ingreso-style { border-left-color: #2a9d8f !important; } .gasto-style { border-left-color: #e63946 !important; } .deuda-style { border-left-color: #f4a261 !important; } .pagada-style { border-left-color: #457b9d !important; }</style>", unsafe_allow_html=True)
 
@@ -70,18 +67,18 @@ else:
     BANCOS = ["Efectivo", "Nequi", "Daviplata", "Nu"]
     CATEGORIAS = ["Comida", "Transporte", "Rumba", "Deudas", "Hogar", "Otros"]
     
-    # Archivos
     ARCH_HIST = f"{user}_hist.json"
-    ARCH_DEUDAS = f"{user}_deudas_v2.json" # Nueva estructura para soportar el historial interno
+    ARCH_DEUDAS = f"{user}_deudas_v2.json"
 
     def cargar_datos(tipo):
-        p = f"{user}_{tipo}.json"
+        p = f"{user}_{tipo}.json" if tipo == "hist" else ARCH_DEUDAS
         if os.path.exists(p):
             with open(p, "r") as f: return json.load(f)
         return [] if tipo == "hist" else {}
 
     def guardar_datos(tipo, d):
-        with open(f"{user}_{tipo}.json", "w") as f: json.dump(d, f)
+        p = f"{user}_{tipo}.json" if tipo == "hist" else ARCH_DEUDAS
+        with open(p, "w") as f: json.dump(d, f)
 
     def cargar_saldo(b):
         p = f"{user}_s_{b.lower()}.txt"
@@ -92,16 +89,12 @@ else:
     def guardar_saldo(b, s):
         with open(f"{user}_s_{b.lower()}.txt", "w") as f: f.write(str(s))
 
-    # Cargar información inicial
     hist = cargar_datos("hist")
     deudas = cargar_datos("deudas")
     saldos = {b: cargar_saldo(b) for b in BANCOS}
     total_disponible = sum(saldos.values())
 
-    # --- PANTALLA VISUAL DE SALDO DISPONIBLE ---
     st.markdown(f'<div class="tarjeta-saldo"><h3>TOTAL GENERAL DISPONIBLE</h3><h1>${total_disponible:,} COP</h1></div>', unsafe_allow_html=True)
-    
-    # --- CUADRÍCULA DE BANCOS INDIVIDUALES ---
     cols_html = "".join([f'<div class="tarjeta-banco"><p>{b}</p><h4>${saldos[b]:,}</h4></div>' for b in BANCOS])
     st.markdown(f'<div class="contenedor-bancos">{cols_html}</div>', unsafe_allow_html=True)
 
@@ -109,67 +102,53 @@ else:
         st.session_state.usuario_logeado = None
         st.rerun()
 
-    # PESTAÑAS PRINCIPALES
     p_stats, p_historial, p_mov, p_deu = st.tabs(["📈 Estadísticas", "📊 Historial Completo", "💸 Registrar Movimientos", "📌 Deudas"])
 
-    # --- PESTAÑA 1: ESTADÍSTICAS ---
+    # --- ESTADÍSTICAS ---
     with p_stats:
         st.subheader("Resumen Analítico")
         df = pd.DataFrame(hist)
-        
         total_gastado = 0
         if not df.empty and "Gasto" in df['tipo'].values:
             total_gastado = int(df[df['tipo'] == "Gasto"]['monto'].sum())
-            
         st.markdown(f'<div class="tarjeta-gastos"><h3>GASTOS TOTALES ACUMULADOS</h3><h1>${total_gastado:,} COP</h1></div>', unsafe_allow_html=True)
-        
         if total_gastado > 0:
             gastos_df = df[df['tipo'] == "Gasto"]
             resumen = gastos_df.groupby('cat')['monto'].sum()
-            st.markdown("### Porcentaje por Categoría")
             for cat, monto in resumen.items():
                 porcentaje = (monto / total_gastado) * 100
                 st.write(f"🔹 **{cat}:** ${int(monto):,} ({porcentaje:.1f}%)")
-        else:
-            st.info("No registras gastos todavía.")
+        else: st.info("No registras gastos todavía.")
 
-    # --- PESTAÑA 2: HISTORIAL COMPLETO INDIVIDUAL ---
+    # --- HISTORIAL COMPLETO ---
     with p_historial:
         st.subheader("Lista de Movimientos Realizados")
-        if len(hist) == 0:
-            st.info("No hay transacciones registradas en esta cuenta.")
+        if len(hist) == 0: st.info("No hay transacciones.")
         else:
             for h in reversed(hist):
                 if h['tipo'] == "Ingreso":
                     st.markdown(f'<div class="item-historial ingreso-style">📈 <b>Ingreso ({h["banco"]}):</b> +${h["monto"]:,} COP <br> 📝 {h["det"]}</div>', unsafe_allow_html=True)
                 else:
                     st.markdown(f'<div class="item-historial gasto-style">📉 <b>Gasto ({h["banco"]}):</b> -${h["monto"]:,} COP <br> 📁 Categoría: {h["cat"]} | {h["det"]}</div>', unsafe_allow_html=True)
-            
             st.write("---")
-            if st.button("🗑️ Borrar Todo el Historial", use_container_width=True, key="btn_borrar_absoluto"):
+            if st.button("🗑️ Borrar Todo (Saldos y Movimientos)", use_container_width=True):
                 for b in BANCOS:
-                    p_b = f"{user}_s_{b.lower()}.txt"
-                    if os.path.exists(p_b): os.remove(p_b)
+                    if os.path.exists(f"{user}_s_{b.lower()}.txt"): os.remove(f"{user}_s_{b.lower()}.txt")
                 if os.path.exists(ARCH_HIST): os.remove(ARCH_HIST)
-                if os.path.exists(ARCH_DEUDAS): os.remove(ARCH_DEUDAS)
-                st.success("🗑️ ¡Historial, deudas y saldos borrados por completo!")
                 st.rerun()
 
-    # --- PESTAÑA 3: MOVIMIENTOS ---
+    # --- MOVIMIENTOS ---
     with p_mov:
         c1, c2 = st.columns(2)
         with c1:
-            if st.button("➕ Registrar Ingreso", use_container_width=True): st.session_state.modo = "ing"
+            if st.button("➕ Ingreso", use_container_width=True): st.session_state.modo = "ing"
         with c2:
-            if st.button("➖ Registrar Gasto", use_container_width=True): st.session_state.modo = "gas"
-
-        modo = st.session_state.get('modo', 'ing')
+            if st.button("➖ Gasto", use_container_width=True): st.session_state.modo = "gas"
         
-        if modo == "ing":
-            st.markdown("### 📈 Añadir Fondos")
-            b_i = st.selectbox("¿A qué cuenta ingresa?", BANCOS)
-            m_i = st.number_input("Monto en COP:", min_value=0, step=1000, key="m_i_val")
-            d_i = st.text_input("Detalle o concepto:", placeholder="Ej: Sueldo, Venta", key="d_i_val")
+        if st.session_state.get('modo', 'ing') == "ing":
+            b_i = st.selectbox("¿Cuenta?", BANCOS)
+            m_i = st.number_input("Monto:", min_value=0, step=1000)
+            d_i = st.text_input("Detalle:")
             if st.button("Guardar Ingreso 📈", use_container_width=True):
                 if m_i > 0:
                     saldos[b_i] += m_i
@@ -178,94 +157,63 @@ else:
                     guardar_datos("hist", hist)
                     st.rerun()
         else:
-            st.markdown("### 📉 Descontar Gasto")
-            b_g = st.selectbox("¿De qué cuenta sale el dinero?", BANCOS)
+            b_g = st.selectbox("¿Cuenta?", BANCOS)
             cat_g = st.selectbox("Categoría:", CATEGORIAS)
-            m_g = st.number_input("Monto en COP:", min_value=0, step=1000, key="m_g_val")
-            paga_d = st.checkbox("¿Este gasto descuenta alguna deuda?")
-            id_d = st.text_input("ID de la Deuda:").upper().strip() if paga_d else ""
-            
+            m_g = st.number_input("Monto:", min_value=0, step=1000)
+            paga_d = st.checkbox("¿Paga deuda?")
+            id_d = st.text_input("ID Deuda:").upper().strip() if paga_d else ""
             if st.button("Confirmar Gasto 📉", use_container_width=True):
-                if m_g > 0:
-                    if m_g <= saldos[b_g]:
-                        if paga_d:
-                            if id_d in deudas and deudas[id_d]['estado'] == "activa":
-                                # Descontar
-                                deudas[id_d]['monto_pendiente'] -= m_g
-                                deudas[id_d]['historial_pagos'].append(f"Abono de ${m_g:,} COP desde {b_g}")
-                                
-                                # Verificar si se pagó completa
-                                if deudas[id_d]['monto_pendiente'] <= 0:
-                                    deudas[id_d]['monto_pendiente'] = 0
-                                    deudas[id_d]['estado'] = "pagada"
-                                    deudas[id_d]['historial_pagos'].append("🎉 ¡Deuda totalmente pagada!")
-                                
-                                guardar_datos("deudas", deudas)
-                            else:
-                                st.error("❌ El ID no corresponde a una deuda activa.")
-                                st.stop()
-                        
-                        saldos[b_g] -= m_g
-                        guardar_saldo(b_g, saldos[b_g])
-                        hist.append({"tipo": "Gasto", "banco": b_g, "monto": m_g, "cat": cat_g, "det": f"Abono a Deuda ID: {id_d}" if paga_d else f"Gasto ordinario: {cat_g}"})
-                        guardar_datos("hist", hist)
-                        st.rerun()
-                    else: st.error("❌ Fondos insuficientes.")
+                if m_g > 0 and m_g <= saldos[b_g]:
+                    if paga_d:
+                        if id_d in deudas and deudas[id_d]['estado'] == "activa":
+                            deudas[id_d]['monto_pendiente'] -= m_g
+                            deudas[id_d]['historial_pagos'].append(f"Abono de ${m_g:,} COP desde {b_g}")
+                            if deudas[id_d]['monto_pendiente'] <= 0:
+                                deudas[id_d]['monto_pendiente'] = 0
+                                deudas[id_d]['estado'] = "pagada"
+                                deudas[id_d]['historial_pagos'].append("🎉 ¡Pagada!")
+                            guardar_datos("deudas", deudas)
+                        else: st.error("ID inválido."); st.stop()
+                    saldos[b_g] -= m_g
+                    guardar_saldo(b_g, saldos[b_g])
+                    hist.append({"tipo": "Gasto", "banco": b_g, "monto": m_g, "cat": cat_g, "det": f"Abono ID: {id_d}" if paga_d else f"Gasto: {cat_g}"})
+                    guardar_datos("hist", hist)
+                    st.rerun()
+                elif m_g > saldos[b_g]: st.error("Saldo insuficiente.")
 
-    # --- PESTAÑA 4: DEUDAS (CON HISTORIAL DETALLADO) ---
+    # --- DEUDAS (CON BOTÓN DE BORRADO INDEPENDIENTE) ---
     with p_deu:
         st.subheader("📌 Registrar Nueva Deuda")
-        id_n = st.text_input("Código ID Único (Sin espacios):", placeholder="Ej: JUAN01").upper().strip()
-        concepto_n = st.text_input("Concepto de la deuda:", placeholder="Ej: Préstamo para la moto")
-        m_n = st.number_input("Monto inicial de la deuda:", min_value=0, step=1000)
-        
+        id_n = st.text_input("ID Único:", placeholder="EJ: JUAN1").upper().strip()
+        concepto_n = st.text_input("Concepto:")
+        m_n = st.number_input("Monto Inicial:", min_value=0, step=1000)
         if st.button("Crear Deuda 📌", use_container_width=True):
             if id_n and m_n > 0 and concepto_n:
-                if id_n in deudas:
-                    st.error("❌ Este ID ya existe. Usa uno diferente.")
+                if id_n in deudas: st.error("ID ya existe.")
                 else:
-                    deudas[id_n] = {
-                        "concepto": concepto_n,
-                        "monto_inicial": m_n,
-                        "monto_pendiente": m_n,
-                        "estado": "activa",
-                        "historial_pagos": [f"Deuda creada por ${m_n:,} COP - Concepto: {concepto_n}"]
-                    }
+                    deudas[id_n] = {"concepto": concepto_n, "monto_inicial": m_n, "monto_pendiente": m_n, "estado": "activa", "historial_pagos": [f"Creada por ${m_n:,}"]}
                     guardar_datos("deudas", deudas)
-                    st.success(f"✅ Deuda '{id_n}' creada exitosamente.")
                     st.rerun()
-            else:
-                st.warning("Completa todos los campos para registrar la deuda.")
+
+        st.write("---")
+        d_act = {k: v for k, v in deudas.items() if v.get('estado', 'activa') == "activa"}
+        d_pag = {k: v for k, v in deudas.items() if v.get('estado', 'activa') == "pagada"}
+        
+        st.markdown("### 📋 Pendientes")
+        for k, v in d_act.items():
+            with st.expander(f"🔴 {k} | Pendiente: ${v['monto_pendiente']:,}"):
+                st.write(f"**Concepto:** {v['concepto']}"); [st.write(f"• {p}") for p in v['historial_pagos']]
         
         st.write("---")
-        
-        # Filtrar deudas activas y pagadas
-        deudas_activas = {k: v for k, v in deudas.items() if v.get('estado', 'activa') == "activa"}
-        deudas_pagadas = {k: v for k, v in deudas.items() if v.get('estado', 'activa') == "pagada"}
-        
-        # 1. MOSTRAR DEUDAS ACTIVAS
-        st.markdown("### 📋 Deudas Activas (Pendientes)")
-        if deudas_activas:
-            for k, v in deudas_activas.items():
-                with st.expander(f"🔴 ID: {k} | Pendiente: ${v['monto_pendiente']:,} COP"):
-                    st.markdown(f"**Concepto:** {v['concepto']}")
-                    st.markdown(f"**Monto Inicial:** ${v['monto_inicial']:,} COP")
-                    st.markdown("**Historial de esta deuda:**")
-                    for p in v['historial_pagos']:
-                        st.write(f"• {p}")
-        else:
-            st.info("🎉 ¡Felicidades! No tienes deudas pendientes.")
-            
+        st.markdown("### ✅ Pagadas")
+        for k, v in d_pag.items():
+            with st.expander(f"🟢 [PAGADA] {k}"):
+                st.write(f"**Concepto:** {v['concepto']}"); [st.write(f"• {p}") for p in v['historial_pagos']]
+
         st.write("---")
-        
-        # 2. MOSTRAR DEUDAS TOTALMENTE PAGADAS
-        st.markdown("### ✅ Historial de Deudas Pagadas")
-        if deudas_pagadas:
-            for k, v in deudas_pagadas.items():
-                with st.expander(f"🟢 [PAGADA] ID: {k} | Total: ${v['monto_inicial']:,} COP"):
-                    st.markdown(f"**Concepto:** {v['concepto']}")
-                    st.markdown("**Historial completo de pagos:**")
-                    for p in v['historial_pagos']:
-                        st.write(f"• {p}")
-        else:
-            st.caption("Aún no tienes deudas archivadas como pagadas.")
+        # --- NUEVO BOTÓN SOLICITADO ---
+        if st.button("🗑️ Limpiar Historial de Deudas", use_container_width=True):
+            if os.path.exists(ARCH_DEUDAS):
+                os.remove(ARCH_DEUDAS)
+                st.success("Historial de deudas borrado.")
+                st.rerun()
