@@ -6,9 +6,20 @@ import pandas as pd
 # --- CONFIGURACIÓN ---
 st.set_page_config(page_title="Finanzas Pro Stats", page_icon="💰", layout="centered")
 
-# --- DISEÑO MÓVIL ---
+# --- DISEÑO MÓVIL OPTIMIZADO (Sin modificar lógica anterior) ---
 st.markdown("<style>#MainMenu {visibility: hidden;} footer {visibility: hidden;} header {visibility: hidden;}</style>", unsafe_allow_html=True)
 st.markdown("<style>.stApp { background-color: #121212 !important; color: #e0e0e0 !important; }</style>", unsafe_allow_html=True)
+
+# Ajustes de espaciado global para evitar márgenes gigantes en teléfonos
+st.markdown("""
+<style>
+    .block-container { padding-top: 1rem !important; padding-bottom: 1rem !important; padding-left: 0.6rem !important; padding-right: 0.6rem !important; }
+    .stTabs [data-baseweb="tab-list"] { gap: 4px !important; }
+    .stTabs [data-baseweb="tab"] { padding-left: 8px !important; padding-right: 8px !important; font-size: 0.85rem !important; }
+    /* Optimización de botones para dedos (Mobile Touch) */
+    .stButton button { min-height: 42px !important; border-radius: 10px !important; }
+</style>
+""", unsafe_allow_html=True)
 
 # Estilo de tarjetas optimizadas para pantallas angostas
 st.markdown("<style>.tarjeta-saldo { background: linear-gradient(135deg, #1f4068 0%, #162447 100%); color: white !important; padding: 20px; border-radius: 16px; box-shadow: 0px 10px 25px rgba(0,0,0,0.15); text-align: center; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.1);}</style>", unsafe_allow_html=True)
@@ -185,7 +196,6 @@ else:
         
         if modo_actual == "ing":
             st.markdown("### 📈 Añadir Fondos")
-            # Fila de Botones Exprés fuera del form para actualizar el estado instantáneamente
             st.caption("⚡ Teclado Exprés (Toca para sumar):")
             b1, b2, b3, b4, b5, b6, b_clr = st.columns([1,1,1,1,1,1,1.5])
             with b1:
@@ -203,11 +213,9 @@ else:
             with b_clr:
                 if st.button("🧹 Borrar", key="i_clr"): st.session_state.val_express_ing = 0
 
-            # Formulario
             with st.form("form_ingreso", clear_on_submit=True):
                 b_i = st.selectbox("¿Cuenta?", BANCOS)
                 
-                # Carga el acumulado del teclado exprés como valor inicial
                 val_inicial = f"{st.session_state.val_express_ing:,}" if st.session_state.val_express_ing > 0 else ""
                 txt_m_i = st.text_input("Monto en COP:", value=val_inicial, placeholder="Escribe o usa los botones exprés")
                 d_i = st.text_input("Detalle:")
@@ -219,7 +227,7 @@ else:
                         guardar_saldo(b_i, saldos[b_i])
                         hist.append({"tipo": "Ingreso", "banco": b_i, "monto": m_i, "cat": "Ingreso", "det": d_i if d_i else "Ingreso general"})
                         guardar_datos("hist", hist)
-                        st.session_state.val_express_ing = 0 # Reset exprés
+                        st.session_state.val_express_ing = 0
                         st.rerun()
                     else: st.error("Monto inválido.")
         
@@ -262,13 +270,14 @@ else:
                                     deudas[id_d]['monto_pendiente'] = 0
                                     deudas[id_d]['estado'] = "pagada"
                                     deudas[id_d]['historial_pagos'].append("🎉 ¡Pagada!")
+                                deudas[id_d] = deudas[id_d]
                                 guardar_datos("deudas", deudas)
                             else: st.error("ID de deuda inválido."); st.stop()
                         saldos[b_g] -= m_g
                         guardar_saldo(b_g, saldos[b_g])
                         hist.append({"tipo": "Gasto", "banco": b_g, "monto": m_g, "cat": cat_g, "det": f"Abono ID: {id_d}" if paga_d else f"Gasto: {cat_g}"})
                         guardar_datos("hist", hist)
-                        st.session_state.val_express_gas = 0 # Reset exprés
+                        st.session_state.val_express_gas = 0
                         st.rerun()
                     elif m_g > saldos[b_g]: st.error("Saldo insuficiente.")
                     else: st.error("Monto inválido.")
@@ -311,7 +320,7 @@ else:
                             guardar_datos("metas", metas)
                             hist.append({"tipo": "Meta", "banco": b_m, "monto": m_m, "cat": "Ahorro", "det": meta_dest})
                             guardar_datos("hist", hist)
-                            st.session_state.val_express_met = 0 # Reset exprés
+                            st.session_state.val_express_met = 0
                             st.rerun()
                         elif m_m > saldos[b_m]: st.error("Saldo insuficiente.")
                         else: st.error("Monto inválido.")
@@ -353,7 +362,7 @@ else:
                         guardar_saldo(b_destino, saldos[b_destino])
                         hist.append({"tipo": "Transferencia", "banco": b_origen, "monto": m_t, "cat": b_destino, "det": f"Transferencia de {b_origen} a {b_destino}"})
                         guardar_datos("hist", hist)
-                        st.session_state.val_express_tra = 0 # Reset exprés
+                        st.session_state.val_express_tra = 0
                         st.rerun()
                     elif m_t > saldos[b_origen]: st.error(f"Saldo insuficiente en {b_origen}.")
                     else: st.error("Monto inválido.")
@@ -392,7 +401,7 @@ else:
                     else:
                         deudas[id_n] = {"concepto": concepto_n, "monto_inicial": m_n, "monto_pendiente": m_n, "estado": "activa", "historial_pagos": [f"Creada por ${m_n:,}"]}
                         guardar_datos("deudas", deudas)
-                        st.session_state.val_express_deu = 0 # Reset exprés
+                        st.session_state.val_express_deu = 0
                         st.session_state["deuda_creada_ok"] = True
                 else: st.error("Por favor completa los datos con un monto válido.")
         
@@ -450,7 +459,7 @@ else:
                 if nombre_m and total_m > 0:
                     metas[nombre_m] = {"objetivo": total_m, "ahorrado": 0}
                     guardar_datos("metas", metas)
-                    st.session_state.val_express_mcrear = 0 # Reset exprés
+                    st.session_state.val_express_mcrear = 0
                     st.session_state["meta_creada_ok"] = True
                 else: st.error("Verifica los datos ingresados.")
         
