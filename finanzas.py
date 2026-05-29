@@ -75,28 +75,4 @@ else:
         """
         <style>
         .stApp { background-color: #f8f9fa !important; color: #212529 !important; }
-        h1, h2, h3, h4, p, label, .stMarkdown { color: #212529 !important; }
-        .tarjeta-saldo { background: linear-gradient(135deg, #1d3557 0%, #457b9d 100%); }
-        .item-historial { background-color: #ffffff; color: #212529; border: 1px solid #e9ecef; }
-        </style>
-        """, unsafe_allow_html=True
-    )
-
-# --- FUNCIONES PARA EL SISTEMA DE USUARIOS ---
-def cargar_usuarios():
-    usuarios = {}
-    if os.path.exists(ARCHIVO_USUARIOS):
-        with open(ARCHIVO_USUARIOS, "r") as archivo:
-            for linea in archivo:
-                partes = linea.strip().split(",")
-                if len(partes) == 2:
-                    usuarios[partes[0]] = partes[1]
-    return usuarios
-
-def registrar_usuario(nuevo_usuario, nueva_contrasena):
-    with open(ARCHIVO_USUARIOS, "a") as archivo:
-        archivo.write(f"{nuevo_usuario},{nueva_contrasena}\n")
-
-# --- INICIALIZAR MEMORIA DE SESIÓN ---
-if 'usuario_logeado' not in st.session_state:
-    st.session_state.usuario_logeado = None
+        h1, h2,
