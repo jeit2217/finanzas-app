@@ -130,7 +130,7 @@ else:
     # --- MENÚ CENTRAL DE OPERACIONES ---
     pest_panel, pest_ingreso, pest_gasto = st.tabs(["📊 Panel General", "📈 Registrar Ingreso", "📉 Registrar Gasto"])
 
-    # --- CONTENIDO PESTAÑA 1: HISTORIAL ---
+    # --- CONTENIDO PESTAÑA 1: HISTORIAL (CON NUEVO BOTÓN DE BORRADO ABAJO) ---
     with pest_panel:
         st.markdown("<div style='margin-top: 15px;'></div>", unsafe_allow_html=True)
         lista_movimientos = cargar_historial()
@@ -144,6 +144,17 @@ else:
                     st.markdown(f'<div class="item-historial ingreso-style">{texto}</div>', unsafe_allow_html=True)
                 else:
                     st.markdown(f'<div class="item-historial gasto-style">{texto}</div>', unsafe_allow_html=True)
+            
+            # Línea divisoria y el botón al final de la lista de movimientos
+            st.write("---")
+            if st.button("🗑️ Borrar Todo el Historial", use_container_width=True, key="btn_borrar_todo"):
+                if os.path.exists(ARCHIVO_SALDO):
+                    os.remove(ARCHIVO_SALDO)
+                if os.path.exists(ARCHIVO_HISTORIAL):
+                    os.remove(ARCHIVO_HISTORIAL)
+                st.session_state.saldo = 0
+                st.success("🗑️ ¡Historial y saldo reiniciados con éxito!")
+                st.rerun()
 
     # --- CONTENIDO PESTAÑA 2: INGRESOS ---
     with pest_ingreso:
@@ -172,36 +183,18 @@ else:
         monto_gasto = st.number_input("Monto en pesos (COP):", min_value=0, step=1000, value=0, key="input_gasto")
         detalle_gasto = st.text_input("¿En qué gastaste este dinero? (Ej: Almuerzo, Transporte):", placeholder="Escribe el detalle aquí...", key="input_det_gasto").strip()
         
-        # Estructura en paralelo: Botón Gasto (Izquierda) y Botón Borrar Historial (Derecha)
-        col_btn_gasto, col_btn_borrar = st.columns(2)
-        
-        with col_btn_gasto:
-            if st.button("Descontar Gasto 📉", use_container_width=True, key="btn_confirmar_gasto"):
-                if monto_gasto > 0:
-                    if monto_gasto <= st.session_state.saldo:
-                        if detalle_gasto == "":
-                            detalle_gasto = "Gasto general"
-                            
-                        st.session_state.saldo -= monto_gasto
-                        guardar_saldo(st.session_state.saldo)
-                        guardar_movimiento(f"📉 Gasto: -${monto_gasto:,} COP ({detalle_gasto})")
-                        st.error(f"🛑 Gasto de ${monto_gasto:,} COP por '{detalle_gasto}' aplicado.")
-                        st.rerun()
-                    else:
-                        st.warning("❌ Operación rechazada: Fondos insuficientes.")
+        if st.button("Descontar Gasto 📉", use_container_width=True, key="btn_confirmar_gasto"):
+            if monto_gasto > 0:
+                if monto_gasto <= st.session_state.saldo:
+                    if detalle_gasto == "":
+                        detalle_gasto = "Gasto general"
+                        
+                    st.session_state.saldo -= monto_gasto
+                    guardar_saldo(st.session_state.saldo)
+                    guardar_movimiento(f"📉 Gasto: -${monto_gasto:,} COP ({detalle_gasto})")
+                    st.error(f"🛑 Gasto de ${monto_gasto:,} COP por '{detalle_gasto}' aplicado.")
+                    st.rerun()
                 else:
-                    st.warning("Por favor ingresa un valor válido.")
-                    
-        with col_btn_borrar:
-            if st.button("Borrar Historial 🗑️", use_container_width=True, key="btn_borrar_todo"):
-                # 1. Eliminamos físicamente los archivos del usuario para limpiar la base de datos
-                if os.path.exists(ARCHIVO_SALDO):
-                    os.remove(ARCHIVO_SALDO)
-                if os.path.exists(ARCHIVO_HISTORIAL):
-                    os.remove(ARCHIVO_HISTORIAL)
-                
-                # 2. Reiniciamos los valores de la sesión actual
-                st.session_state.saldo = 0
-                
-                st.success("🗑️ ¡Historial y saldo eliminados por completo!")
-                st.rerun()
+                    st.warning("❌ Operación rechazada: Fondos insuficientes.")
+            else:
+                st.warning("Por favor ingresa un valor válido.")
