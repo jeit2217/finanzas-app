@@ -7,19 +7,16 @@ ARCHIVO_USUARIOS = "usuarios_db.txt"
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 st.set_page_config(page_title="Finanzas Pro", page_icon="💰", layout="centered")
 
-# --- MENÚ LATERAL (SIDEBAR) - CONTROL DE SESIÓN Y TEMA ---
-with st.sidebar:
-    st.markdown("<h2 style='text-align: center; margin-bottom: 0;'>🎨 Apariencia</h2>", unsafe_allow_html=True)
-    tema = st.radio("Elige el estilo visual:", ["Modo Claro ☀️", "Modo Oscuro 🌙"], label_visibility="collapsed")
-    st.write("---")
-
-# --- DISEÑO VISUAL BASE Y AJUSTE DE TAMAÑO DEL SIDEBAR ---
+# --- DISEÑO VISUAL BASE (SIEMPRE MODO OSCURO) ---
 st.markdown("<style>#MainMenu {visibility: hidden;} footer {visibility: hidden;} header {visibility: hidden;} .stAppDeployButton {display:none;}</style>", unsafe_allow_html=True)
-# Ocultar la flecha para que no se pueda colapsar
-st.markdown("<style>[data-testid='stSidebarCollapseButton'] {display: none !important;}</style>", unsafe_allow_html=True)
-# Forzar a que el sidebar sea grande, ancho (320px) y no se encoja
-st.markdown("<style>[data-testid='stSidebar'] {min-width: 320px !important; max-width: 320px !important; visibility: visible !important; transform: none !important;}</style>", unsafe_allow_html=True)
-# Agrandar la letra y los textos de las opciones del radio button en el menú
+
+# Forzar colores de Modo Oscuro en toda la app
+st.markdown("<style>.stApp { background-color: #121212 !important; color: #e0e0e0 !important; }</style>", unsafe_allow_html=True)
+st.markdown("<style>h1, h2, h3, h4, p, label, .stMarkdown { color: #e0e0e0 !important; }</style>", unsafe_allow_html=True)
+st.markdown("<style>.tarjeta-saldo { background: linear-gradient(135deg, #1f4068 0%, #162447 100%); }</style>", unsafe_allow_html=True)
+st.markdown("<style>.item-historial { background-color: #1b1b1b; color: #e0e0e0; border: 1px solid #333; }</style>", unsafe_allow_html=True)
+
+# Agrandar la letra de las opciones dentro del menú lateral para que sea legible
 st.markdown("<style>[data-testid='stSidebar'] .stRadio label p {font-size: 1.15rem !important; font-weight: 600 !important; padding: 5px 0;}</style>", unsafe_allow_html=True)
 
 # --- ESTILOS DE TARJETAS E HISTORIAL ---
@@ -28,18 +25,6 @@ st.markdown("<style>.tarjeta-saldo h3 {margin: 0 !important; font-size: 0.95rem 
 st.markdown("<style>.tarjeta-saldo h1 {margin: 10px 0 0 0 !important; font-size: 2.6rem !important; font-weight: 700 !important; color: #ffffff !important;}</style>", unsafe_allow_html=True)
 st.markdown("<style>.item-historial {padding: 14px 18px; border-radius: 10px; margin-bottom: 10px; border-left: 6px solid #ccc; box-shadow: 0px 4px 6px rgba(0,0,0,0.02); font-family: monospace; font-size: 0.95rem;}</style>", unsafe_allow_html=True)
 st.markdown("<style>.ingreso-style { border-left-color: #2a9d8f !important; } .gasto-style { border-left-color: #e63946 !important; }</style>", unsafe_allow_html=True)
-
-# --- CONFIGURACIÓN DE COLORES DINÁMICOS POR TEMA ---
-if tema == "Modo Oscuro 🌙":
-    st.markdown("<style>.stApp { background-color: #121212 !important; color: #e0e0e0 !important; }</style>", unsafe_allow_html=True)
-    st.markdown("<style>h1, h2, h3, h4, p, label, .stMarkdown { color: #e0e0e0 !important; }</style>", unsafe_allow_html=True)
-    st.markdown("<style>.tarjeta-saldo { background: linear-gradient(135deg, #1f4068 0%, #162447 100%); }</style>", unsafe_allow_html=True)
-    st.markdown("<style>.item-historial { background-color: #1b1b1b; color: #e0e0e0; border: 1px solid #333; }</style>", unsafe_allow_html=True)
-else:
-    st.markdown("<style>.stApp { background-color: #f8f9fa !important; color: #212529 !important; }</style>", unsafe_allow_html=True)
-    st.markdown("<style>h1, h2, h3, h4, p, label, .stMarkdown { color: #212529 !important; }</style>", unsafe_allow_html=True)
-    st.markdown("<style>.tarjeta-saldo { background: linear-gradient(135deg, #1d3557 0%, #457b9d 100%); }</style>", unsafe_allow_html=True)
-    st.markdown("<style>.item-historial { background-color: #ffffff; color: #212529; border: 1px solid #e9ecef; }</style>", unsafe_allow_html=True)
 
 # --- FUNCIONES PARA EL SISTEMA DE USUARIOS ---
 def cargar_usuarios():
@@ -127,9 +112,8 @@ else:
     if 'saldo' not in st.session_state:
         st.session_state.saldo = cargar_saldo()
 
-    # --- AGREGAR MENÚ DE ACCIONES AL SIDEBAR ---
+    # --- MENÚ DE ACCIONES AL SIDEBAR ---
     with st.sidebar:
-        st.write("---")
         st.markdown(f"👤 Cuenta activa:<br><b style='font-size:1.3rem; color:#457b9d;'>{user.capitalize()}</b>", unsafe_allow_html=True)
         st.write("---")
         st.markdown("### 🎯 Operaciones")
