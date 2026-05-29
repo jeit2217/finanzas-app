@@ -13,12 +13,14 @@ with st.sidebar:
     tema = st.radio("Elige el estilo visual:", ["Modo Claro ☀️", "Modo Oscuro 🌙"], label_visibility="collapsed")
     st.write("---")
 
-# --- DISEÑO VISUAL BASE (BLOQUEO DE SIDEBAR PARA QUE NO SE OCULTE) ---
+# --- DISEÑO VISUAL BASE Y AJUSTE DE TAMAÑO DEL SIDEBAR ---
 st.markdown("<style>#MainMenu {visibility: hidden;} footer {visibility: hidden;} header {visibility: hidden;} .stAppDeployButton {display:none;}</style>", unsafe_allow_html=True)
-# Ocultar el botón nativo de abrir/cerrar del sidebar (la flechita)
+# Ocultar la flecha para que no se pueda colapsar
 st.markdown("<style>[data-testid='stSidebarCollapseButton'] {display: none !important;}</style>", unsafe_allow_html=True)
-# Forzar a que el contenedor del sidebar esté siempre expandido y visible
-st.markdown("<style>[data-testid='stSidebar'] {class: fixed !important; visibility: visible !important; transform: none !important;}</style>", unsafe_allow_html=True)
+# Forzar a que el sidebar sea grande, ancho (320px) y no se encoja
+st.markdown("<style>[data-testid='stSidebar'] {min-width: 320px !important; max-width: 320px !important; visibility: visible !important; transform: none !important;}</style>", unsafe_allow_html=True)
+# Agrandar la letra y los textos de las opciones del radio button en el menú
+st.markdown("<style>[data-testid='stSidebar'] .stRadio label p {font-size: 1.15rem !important; font-weight: 600 !important; padding: 5px 0;}</style>", unsafe_allow_html=True)
 
 # --- ESTILOS DE TARJETAS E HISTORIAL ---
 st.markdown("<style>.tarjeta-saldo {color: white !important; padding: 30px; border-radius: 16px; box-shadow: 0px 10px 25px rgba(0,0,0,0.15); text-align: center; margin-bottom: 30px; border: 1px solid rgba(255,255,255,0.1);}</style>", unsafe_allow_html=True)
