@@ -91,18 +91,6 @@ st.markdown("""
         }
         .contenedor-bancos { grid-template-columns: repeat(2, 1fr) !important; gap: 6px !important; }
     }
-
-    /* Añade esto a tu sección de estilos (sin tocar lo anterior) */
-@media (max-width: 768px) {
-    /* Hacer que las fuentes de los cajones sean un poco más grandes para facilitar lectura */
-    .cajon-meta p, .cajon-prestamo p { font-size: 0.95rem !important; }
-    
-    /* Eliminar bordes innecesarios en móviles para ganar espacio */
-    .stApp { padding: 0 !important; }
-    
-    /* Asegurar que los inputs de texto no sean demasiado pequeños */
-    .stTextInput input { font-size: 16px !important; } 
-}
 </style>
 """, unsafe_allow_html=True)
 
@@ -287,31 +275,6 @@ else:
         st.markdown(f'<div class="tarjeta-gastos"><h3>GASTADO EN ESTE MES</h3><h1>{formatear_moneda(total_gastado)}</h1></div>', unsafe_allow_html=True)
         
         st.write("#### 🔍 Gastos por Categoría:")
-        # --- NUEVO DISEÑO RESPONSIVO ---
-        for cat in CATEGORIAS:
-            monto_g = resumen_gastos[cat]
-            tope_g = limites.get(cat, 0)
-            
-            # Fila de datos
-            col1, col2 = st.columns([2, 1])
-            with col1:
-                st.write(f"**{cat}**")
-            with col2:
-                # Alineado a la derecha en PC, se verá bien en móvil
-                st.markdown(f"<div style='text-align: right;'>{formatear_moneda(monto_g)}</div>", unsafe_allow_html=True)
-            
-            # Lógica de barra de progreso (Solo si tiene tope)
-            if tope_g > 0:
-                porcentaje_uso = monto_g / tope_g
-                st.progress(min(porcentaje_uso, 1.0))
-                
-                # Alertas dentro del flujo
-                if porcentaje_uso >= 1.0: 
-                    st.error(f"🚨 ¡AGOTADO! Superaste {cat} por {formatear_moneda(monto_g - tope_g)}!")
-                elif porcentaje_uso >= 0.80: 
-                    st.warning(f"⚠️ {cat}: {porcentaje_uso*100:.0f}% consumido.")
-            
-            st.divider() # Línea delgada que separa y da aire
         resumen_gastos = {c: 0 for c in CATEGORIAS}
         if not df.empty and "Gasto" in df['tipo'].values:
             gastos_df = df[df['tipo'] == "Gasto"]
