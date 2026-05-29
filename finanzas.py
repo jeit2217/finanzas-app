@@ -2,6 +2,7 @@ import streamlit as st
 import os
 import json
 import pandas as pd
+from datetime import datetime
 
 # --- CONFIGURACIÓN ---
 st.set_page_config(page_title="Finanzas Pro Stats", page_icon="💰", layout="centered")
@@ -10,7 +11,6 @@ st.set_page_config(page_title="Finanzas Pro Stats", page_icon="💰", layout="ce
 st.markdown("<style>#MainMenu {visibility: hidden;} footer {visibility: hidden;} header {visibility: hidden;}</style>", unsafe_allow_html=True)
 st.markdown("<style>.stApp { background-color: #121212 !important; color: #e0e0e0 !important; }</style>", unsafe_allow_html=True)
 
-# Estilos responsivos adaptativos según el tamaño de la pantalla
 st.markdown("""
 <style>
     /* --- CONFIGURACIÓN PARA PC / ESCRITORIO --- */
@@ -37,13 +37,11 @@ st.markdown("""
         }
         .stButton button { min-height: 44px !important; border-radius: 12px !important; font-size: 0.88rem !important; }
         
-        /* Fuerza al teclado exprés a ordenarse en rejilla de 3 columnas en celular */
         [data-testid="stHorizontalBlock"] {
             display: grid !important;
             grid-template-columns: repeat(3, 1fr) !important;
             gap: 6px !important;
         }
-        /* El último botón (🧹 Limpiar Valor) ocupa todo el ancho inferior en celular */
         [data-testid="stHorizontalBlock"] > div:last-child {
             grid-column: span 3 !important;
         }
@@ -52,7 +50,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# Tarjetas visuales optimizadas
+# Tarjetas visuales
 st.markdown("<style>.tarjeta-saldo { background: linear-gradient(135deg, #1f4068 0%, #162447 100%); color: white !important; padding: 18px; border-radius: 14px; text-align: center; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.1);}</style>", unsafe_allow_html=True)
 st.markdown("<style>.tarjeta-saldo h3 {margin: 0 !important; font-size: 0.8rem !important; letter-spacing: 1px; opacity: 0.8; color: #f1faee !important;} .tarjeta-saldo h1 {margin: 4px 0 0 0 !important; font-size: 2rem !important; font-weight: 700 !important; color: #ffffff !important;}</style>", unsafe_allow_html=True)
 
@@ -79,14 +77,12 @@ def cargar_usuarios():
     return u
 
 def procesar_monto_texto(texto):
-    if not texto:
-        return 0
+    if not texto: return 0
     limpio = texto.replace(".", "").replace(",", "").replace("$", "").strip()
-    if limpio.isdigit():
-        return int(limpio)
+    if limpio.isdigit(): return int(limpio)
     return 0
 
-# --- INICIALIZACIÓN DE VALORES EXPRÉS ---
+# --- INICIALIZACIÓN DE VARIABLES EXPRÉS ---
 if 'usuario_logeado' not in st.session_state: st.session_state.usuario_logeado = None
 if 'val_express_ing' not in st.session_state: st.session_state.val_express_ing = 0
 if 'val_express_gas' not in st.session_state: st.session_state.val_express_gas = 0
@@ -126,10 +122,12 @@ else:
     ARCH_HIST = f"{user}_hist.json"
     ARCH_DEUDAS = f"{user}_deudas_v2.json"
     ARCH_METAS = f"{user}_metas.json"
+    ARCH_LIMITES = f"{user}_limites.json"
 
     def cargar_datos(tipo):
         if tipo == "hist": p = ARCH_HIST
         elif tipo == "deudas": p = ARCH_DEUDAS
+        elif tipo == "limites": p = ARCH_LIMITES
         else: p = ARCH_METAS
         
         if os.path.exists(p):
@@ -139,6 +137,7 @@ else:
     def guardar_datos(tipo, d):
         if tipo == "hist": p = ARCH_HIST
         elif tipo == "deudas": p = ARCH_DEUDAS
+        elif tipo == "limites": p = ARCH_LIMITES
         else: p = ARCH_METAS
         with open(p, "w") as f: json.dump(d, f)
 
@@ -154,6 +153,7 @@ else:
     hist = cargar_datos("hist")
     deudas = cargar_datos("deudas")
     metas = cargar_datos("metas")
+    limites = cargar_datos("limites")
     saldos = {b: cargar_saldo(b) for b in BANCOS}
     total_disponible = sum(saldos.values())
 
@@ -162,45 +162,102 @@ else:
     cols_html = "".join([f'<div class="tarjeta-banco"><p>{b}</p><h4>${saldos[b]:,}</h4></div>' for b in BANCOS])
     st.markdown(f'<div class="contenedor-bancos">{cols_html}</div>', unsafe_allow_html=True)
 
-    # --- NAVEGACIÓN EN TABS RESPONSIVOS ---
-    tab_est, tab_hist, tab_mov, tab_deu, tab_met = st.tabs(["📈 Stats", "📊 Historial", "💸 Movimientos", "📌 Deudas", "🎯 Metas"])
+    # --- MÓDULO DE TRATAMIENTO DE FECHAS (Retrocompatibilidad automática) ---
+    MESES_DICT = {"01": "Enero", "02": "Febrero", "03": "Marzo", "04": "Abril", "05": "Mayo", "06": "Junio", 
+                  "07": "Julio", "08": "Agosto", "09": "Septiembre", "10": "Octubre", "11": "Noviembre", "12": "Diciembre"}
+    mes_actual_num = datetime.now().strftime("%m")
+    año_actual_num = datetime.now().strftime("%Y")
+    mes_defecto_label = f"{MESES_DICT[mes_actual_num]} {año_actual_num}"
 
-    # --- SECCIÓN 1: ESTADÍSTICAS ---
+    opciones_meses = set()
+    for h in hist:
+        if "fecha" not in h:
+            h["fecha"] = f"{año_actual_num}-{mes_actual_num}-01" # Parche para registros antiguos
+        fecha_obj = datetime.strptime(h["fecha"], "%Y-%m-%d")
+        lbl = f"{MESES_DICT[fecha_obj.strftime('%m')]} {fecha_obj.strftime('%Y')}"
+        opciones_meses.add(lbl)
+    
+    opciones_meses.add(mes_defecto_label)
+    lista_meses_ordenada = sorted(list(opciones_meses), reverse=True)
+
+    # Filtro global superior izquierdo para no ocupar espacio en vertical
+    st.write("### 📅 Filtro de Periodo")
+    mes_seleccionado = st.selectbox("Selecciona el mes a revisar:", lista_meses_ordenada)
+
+    # Filtrado del historial según selección del usuario
+    hist_filtrado = []
+    for h in hist:
+        fecha_obj = datetime.strptime(h.get("fecha", f"{año_actual_num}-{mes_actual_num}-01"), "%Y-%m-%d")
+        lbl = f"{MESES_DICT[fecha_obj.strftime('%m')]} {fecha_obj.strftime('%Y')}"
+        if lbl == mes_seleccionado:
+            hist_filtrado.append(h)
+
+    # --- NAVEGACIÓN EN TABS RESPONSIVOS ---
+    tab_est, tab_hist, tab_mov, tab_deu, tab_met, tab_lim = st.tabs(["📈 Stats", "📊 Hist", "💸 Movs", "📌 Deudas", "🎯 Metas", "📉 Topes"])
+
+    # --- SECCIÓN 1: ESTADÍSTICAS (Con alertas de límites) ---
     with tab_est:
-        st.write("### Resumen Analítico")
-        df = pd.DataFrame(hist)
+        st.write(f"### Resumen de {mes_seleccionado}")
+        df = pd.DataFrame(hist_filtrado)
         total_gastado = 0
         if not df.empty and "Gasto" in df['tipo'].values:
             total_gastado = int(df[df['tipo'] == "Gasto"]['monto'].sum())
-        st.markdown(f'<div class="tarjeta-gastos"><h3>GASTOS ACUMULADOS</h3><h1>${total_gastado:,} COP</h1></div>', unsafe_allow_html=True)
-        if total_gastado > 0:
+        
+        st.markdown(f'<div class="tarjeta-gastos"><h3>GASTADO EN ESTE MES</h3><h1>${total_gastado:,} COP</h1></div>', unsafe_allow_html=True)
+        
+        st.write("#### 🔍 Gastos por Categoría:")
+        resumen_gastos = {c: 0 for c in CATEGORIAS}
+        if not df.empty and "Gasto" in df['tipo'].values:
             gastos_df = df[df['tipo'] == "Gasto"]
-            resumen = gastos_df.groupby('cat')['monto'].sum()
-            for cat, monto in resumen.items():
-                porcentaje = (monto / total_gastado) * 100
-                st.write(f"🔹 **{cat}:** ${int(monto):,} ({porcentaje:.0f}%)")
-        else: st.info("No hay gastos registrados.")
+            for c in CATEGORIAS:
+                resumen_gastos[c] = int(gastos_df[gastos_df['cat'] == c]['monto'].sum())
 
-    # --- SECCIÓN 2: HISTORIAL COMPLETO ---
-    with tab_hist:
-        st.write("### Lista de Transacciones")
-        if len(hist) == 0: st.info("Historial vacío.")
-        else:
-            for h in reversed(hist):
-                if h['tipo'] == "Ingreso":
-                    st.markdown(f'<div class="item-historial ingreso-style">📈 <b>Ingreso ({h["banco"]}):</b> +${h["monto"]:,} <br> 📝 {h["det"]}</div>', unsafe_allow_html=True)
-                elif h['tipo'] == "Meta":
-                    st.markdown(f'<div class="item-historial meta-style">🎯 <b>Ahorro Meta ({h["banco"]}):</b> -${h["monto"]:,} <br> 🚀 Para: {h["det"]}</div>', unsafe_allow_html=True)
-                elif h['tipo'] == "Transferencia":
-                    st.markdown(f'<div class="item-historial transferencia-style">🔄 <b>Transferencia:</b> ${h["monto"]:,} <br> 🏦 Desde {h["banco"]} hacia {h["cat"]}</div>', unsafe_allow_html=True)
+        for cat in CATEGORIAS:
+            monto_g = resumen_gastos[cat]
+            tope_g = limites.get(cat, 0)
+            
+            col_a, col_b = st.columns([3, 1])
+            with col_a:
+                if tope_g > 0:
+                    st.write(f"🔹 **{cat}:** ${monto_g:,} / ${tope_g:,}")
                 else:
-                    st.markdown(f'<div class="item-historial gasto-style">📉 <b>Gasto ({h["banco"]}):</b> -${h["monto"]:,} <br> 📁 {h["cat"]} | {h["det"]}</div>', unsafe_allow_html=True)
+                    st.write(f"🔹 **{cat}:** ${monto_g:,}")
+            with col_b:
+                if total_gastado > 0 and monto_g > 0:
+                    st.write(f"({(monto_g/total_gastado)*100:.0f}%)")
+            
+            # Control dinámico de alertas visuales de presupuesto
+            if tope_g > 0:
+                porcentaje_uso = monto_g / tope_g
+                st.progress(min(porcentaje_uso, 1.0))
+                if porcentaje_uso >= 1.0:
+                    st.error(f"🚨 ¡🚨 AGOTADO! Superaste el límite de {cat} por ${monto_g - tope_g:,}!")
+                elif porcentaje_uso >= 0.80:
+                    st.warning(f"⚠️ ¡Cuidado! Has gastado el {porcentaje_uso*100:.0f}% de tu cupo en {cat}.")
+            st.write("")
+
+    # --- SECCIÓN 2: HISTORIAL COMPLETO (Filtrado) ---
+    with tab_hist:
+        st.write(f"### Transacciones de {mes_seleccionado}")
+        if len(hist_filtrado) == 0: st.info("No hay movimientos en este periodo.")
+        else:
+            for h in reversed(hist_filtrado):
+                f_formateada = h.get("fecha", "")
+                if h['tipo'] == "Ingreso":
+                    st.markdown(f'<div class="item-historial ingreso-style">📈 <b>[{f_formateada}] Ingreso ({h["banco"]}):</b> +${h["monto"]:,} <br> 📝 {h["det"]}</div>', unsafe_allow_html=True)
+                elif h['tipo'] == "Meta":
+                    st.markdown(f'<div class="item-historial meta-style">🎯 <b>[{f_formateada}] Ahorro Meta ({h["banco"]}):</b> -${h["monto"]:,} <br> 🚀 Para: {h["det"]}</div>', unsafe_allow_html=True)
+                elif h['tipo'] == "Transferencia":
+                    st.markdown(f'<div class="item-historial transferencia-style">🔄 <b>[{f_formateada}] Transferencia:</b> ${h["monto"]:,} <br> 🏦 Desde {h["banco"]} hacia {h["cat"]}</div>', unsafe_allow_html=True)
+                else:
+                    st.markdown(f'<div class="item-historial gasto-style">📉 <b>[{f_formateada}] Gasto ({h["banco"]}):</b> -${h["monto"]:,} <br> 📁 {h["cat"]} | {h["det"]}</div>', unsafe_allow_html=True)
             st.write("---")
             if st.button("🗑️ Resetear Datos y Cuentas", use_container_width=True):
                 for b in BANCOS:
                     if os.path.exists(f"{user}_s_{b.lower()}.txt"): os.remove(f"{user}_s_{b.lower()}.txt")
                 if os.path.exists(ARCH_HIST): os.remove(ARCH_HIST)
                 if os.path.exists(ARCH_METAS): os.remove(ARCH_METAS)
+                if os.path.exists(ARCH_LIMITES): os.remove(ARCH_LIMITES)
                 st.rerun()
 
     # --- SECCIÓN 3: MOVIMIENTOS ---
@@ -216,6 +273,7 @@ else:
             if st.button("🔄 Transf.", key="btn_m_tra", use_container_width=True): st.session_state.modo = "trans"
         
         modo_actual = st.session_state.get('modo', 'ing')
+        hoy_str = datetime.now().strftime("%Y-%m-%d")
         st.write("---")
         
         if modo_actual == "ing":
@@ -246,7 +304,7 @@ else:
                     if m_i > 0:
                         saldos[b_i] += m_i
                         guardar_saldo(b_i, saldos[b_i])
-                        hist.append({"tipo": "Ingreso", "banco": b_i, "monto": m_i, "cat": "Ingreso", "det": d_i if d_i else "Ingreso general"})
+                        hist.append({"tipo": "Ingreso", "banco": b_i, "monto": m_i, "cat": "Ingreso", "det": d_i if d_i else "Ingreso general", "fecha": hoy_str})
                         guardar_datos("hist", hist)
                         st.session_state.val_express_ing = 0
                         st.rerun()
@@ -293,7 +351,7 @@ else:
                             else: st.error("ID de deuda inválido."); st.stop()
                         saldos[b_g] -= m_g
                         guardar_saldo(b_g, saldos[b_g])
-                        hist.append({"tipo": "Gasto", "banco": b_g, "monto": m_g, "cat": cat_g, "det": f"Abono ID: {id_d}" if paga_d else f"Gasto: {cat_g}"})
+                        hist.append({"tipo": "Gasto", "banco": b_g, "monto": m_g, "cat": cat_g, "det": f"Abono ID: {id_d}" if paga_d else f"Gasto: {cat_g}", "fecha": hoy_str})
                         guardar_datos("hist", hist)
                         st.session_state.val_express_gas = 0
                         st.rerun()
@@ -333,7 +391,7 @@ else:
                             guardar_saldo(b_m, saldos[b_m])
                             metas[meta_dest]['ahorrado'] += m_m
                             guardar_datos("metas", metas)
-                            hist.append({"tipo": "Meta", "banco": b_m, "monto": m_m, "cat": "Ahorro", "det": meta_dest})
+                            hist.append({"tipo": "Meta", "banco": b_m, "monto": m_m, "cat": "Ahorro", "det": meta_dest, "fecha": hoy_str})
                             guardar_datos("hist", hist)
                             st.session_state.val_express_met = 0
                             st.rerun()
@@ -371,7 +429,7 @@ else:
                         saldos[b_destino] += m_t
                         guardar_saldo(b_origen, saldos[b_origen])
                         guardar_saldo(b_destino, saldos[b_destino])
-                        hist.append({"tipo": "Transferencia", "banco": b_origen, "monto": m_t, "cat": b_destino, "det": f"Mover de {b_origen} a {b_destino}"})
+                        hist.append({"tipo": "Transferencia", "banco": b_origen, "monto": m_t, "cat": b_destino, "det": f"Mover de {b_origen} a {b_destino}", "fecha": hoy_str})
                         guardar_datos("hist", hist)
                         st.session_state.val_express_tra = 0
                         st.rerun()
@@ -421,15 +479,13 @@ else:
         for k, v in d_act.items():
             with st.expander(f"🔴 {k} | Debe: ${v['monto_pendiente']:,}"):
                 st.write(f"**Concepto:** {v['concepto']}")
-                for p in v['historial_pagos']:
-                    st.write(f"• {p}")
+                for p in v['historial_pagos']: st.write(f"• {p}")
         
         st.write("#### ✅ Pagadas")
         for k, v in d_pag.items():
             with st.expander(f"🟢 {k} [Cerrada]"):
                 st.write(f"**Concepto:** {v['concepto']}")
-                for p in v['historial_pagos']:
-                    st.write(f"• {p}")
+                for p in v['historial_pagos']: st.write(f"• {p}")
 
         st.write("---")
         if st.button("🗑️ Borrar Registro de Deudas", use_container_width=True):
@@ -481,9 +537,36 @@ else:
                 if st.button(f"Eliminar: {m_nombre}", key=f"del_{m_nombre}", use_container_width=True):
                     del metas[m_nombre]; guardar_datos("metas", metas); st.rerun()
 
-        st.write("---")
-        if st.button("🗑️ Resetear Metas Completas", use_container_width=True):
-            if os.path.exists(ARCH_METAS): os.remove(ARCH_METAS); st.rerun()
+    # --- NUEVA SECCIÓN 6: CONFIGURACIÓN DE TOPES/LÍMITES ---
+    with tab_lim:
+        st.write("### 📉 Configurar Límites Mensuales")
+        st.write("Establece un presupuesto máximo para evitar gastar de más:")
+        
+        with st.form("form_limites"):
+            cat_limite = st.selectbox("Categoría a limitar:", CATEGORIAS)
+            monto_limite_txt = st.text_input("Presupuesto mensual (COP):", placeholder="Ej: 500000")
+            
+            if st.form_submit_button("Guardar Límite 💾", use_container_width=True):
+                m_lim = procesar_monto_texto(monto_limite_txt)
+                if m_lim >= 0:
+                    limites[cat_limite] = m_lim
+                    guardar_datos("limites", limites)
+                    st.success(f"Límite establecido para {cat_limite}.")
+                    st.rerun()
+                else: st.error("Monto inválido.")
+        
+        st.write("#### 📋 Límites Activos:")
+        if not limites: st.info("No has configurado límites de gasto.")
+        else:
+            for c, m in list(limites.items()):
+                if m > 0:
+                    col_l1, col_l2 = st.columns([3, 1])
+                    with col_l1: st.write(f"🚫 **{c}:** ${m:,} COP al mes")
+                    with col_l2:
+                        if st.button("Eliminar", key=f"del_lim_{c}"):
+                            del limites[c]
+                            guardar_datos("limites", limites)
+                            st.rerun()
 
     # --- BOTÓN DE SALIDA ---
     st.write("---")
