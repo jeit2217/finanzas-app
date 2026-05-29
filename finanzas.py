@@ -73,6 +73,19 @@ if st.session_state.usuario_logeado is None:
 else:
     user = st.session_state.usuario_logeado
 
-    # Archivos específicos para cada usuario independiente
+    # Archivos específicos para cada usuario independiente (AQUÍ ESTABA EL ERROR CORREGIDO)
     ARCHIVO_SALDO = f"{user}_saldo.txt"
-    ARCHIVO_HISTORIAL = f"{
+    ARCHIVO_HISTORIAL = f"{user}_historial.txt"
+
+    def cargar_saldo():
+        if os.path.exists(ARCHIVO_SALDO):
+            with open(ARCHIVO_SALDO, "r") as archivo:
+                return int(archivo.read())
+        return 0
+
+    def guardar_saldo(nuevo_saldo):
+        with open(ARCHIVO_SALDO, "w") as archivo:
+            archivo.write(str(nuevo_saldo))
+
+    def guardar_movimiento(texto):
+        with open(ARCHIVO_
