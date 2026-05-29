@@ -13,19 +13,16 @@ st.markdown(
 
 # --- FUNCIONES PARA EL SISTEMA DE USUARIOS Y CONTRASEÑAS ---
 def cargar_usuarios():
-    """Carga todos los usuarios y contraseñas registrados en un diccionario"""
     usuarios = {}
     if os.path.exists(ARCHIVO_USUARIOS):
         with open(ARCHIVO_USUARIOS, "r") as archivo:
             for linea in archivo:
-                # El archivo guarda los datos como: usuario,contraseña
                 partes = linea.strip().split(",")
                 if len(partes) == 2:
                     usuarios[partes[0]] = partes[1]
     return usuarios
 
 def registrar_usuario(nuevo_usuario, nueva_contrasena):
-    """Guarda un nuevo usuario y contraseña en el archivo"""
     with open(ARCHIVO_USUARIOS, "a") as archivo:
         archivo.write(f"{nuevo_usuario},{nueva_contrasena}\n")
 
@@ -37,7 +34,6 @@ if 'usuario_logeado' not in st.session_state:
 st.title("📱 Mi Control de Finanzas Pro")
 
 if st.session_state.usuario_logeado is None:
-    # Pestañas para separar el Inicio de Sesión del Registro
     pestaña_login, pestaña_registro = st.tabs(["🔑 Iniciar Sesión", "📝 Registrarse"])
     
     # --- PESTAÑA DE REGISTRO ---
@@ -66,7 +62,6 @@ if st.session_state.usuario_logeado is None:
         if st.button("Entrar", key="btn_login"):
             usuarios_existentes = cargar_usuarios()
             
-            # Verificar si el usuario existe y la contraseña coincide perfectamente
             if login_user in usuarios_existentes and usuarios_existentes[login_user] == login_pass:
                 st.session_state.usuario_logeado = login_user
                 st.success(f"¡Bienvenido de nuevo, {login_user.capitalize()}!")
@@ -78,23 +73,6 @@ if st.session_state.usuario_logeado is None:
 else:
     user = st.session_state.usuario_logeado
 
-    # Archivos específicos para las finanzas de ESTE usuario
+    # Archivos específicos para cada usuario independiente
     ARCHIVO_SALDO = f"{user}_saldo.txt"
-    ARCHIVO_HISTORIAL = f"{user}_historial.txt"
-
-    # Funciones de finanzas personalizadas
-    def cargar_saldo():
-        if os.path.exists(ARCHIVO_SALDO):
-            with open(ARCHIVO_SALDO, "r") as archivo:
-                return int(archivo.read())
-        return 0
-
-    def guardar_saldo(nuevo_saldo):
-        with open(ARCHIVO_SALDO, "w") as archivo:
-            archivo.write(str(nuevo_saldo))
-
-def guardar_movimiento(texto):
-    with open(ARCHIVO_HISTORIAL, "a") as archivo:
-        archivo.write(texto + "\n")
-
-    def cargar_historial():
+    ARCHIVO_HISTORIAL = f"{
