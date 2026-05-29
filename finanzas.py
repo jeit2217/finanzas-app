@@ -1,38 +1,81 @@
-
 import streamlit as st
 import os
 
-# --- CONTROL DE INICIO DE SESIÓN ---
-st.title("📱 Mi Control de Finanzas Multi-Usuario")
+# --- ARCHIVO BASE DE DATOS DE USUARIOS ---
+ARCHIVO_USUARIOS = "usuarios_db.txt"
 
-# Creamos una variable en la memoria de la app para saber si ya iniciaron sesión
-if 'usuario' not in st.session_state:
-    st.session_state.usuario = None
+# --- FUNCIONES PARA EL SISTEMA DE USUARIOS Y CONTRASEÑAS ---
+def cargar_usuarios():
+    """Carga todos los usuarios y contraseñas registrados en un diccionario"""
+    usuarios = {}
+    if os.path.exists(ARCHIVO_USUARIOS):
+        with open(ARCHIVO_USUARIOS, "r") as archivo:
+            for linea in archivo:
+                # El archivo guarda los datos como: usuario,contraseña
+                partes = linea.strip().split(",")
+                if len(partes) == 2:
+                    usuarios[partes[0]] = partes[1]
+    return usuarios
 
-# Si nadie ha iniciado sesión, mostramos la pantalla de bienvenida
-if st.session_state.usuario is None:
-    st.subheader("Por favor, inicia sesión para continuar")
+def registrar_usuario(nuevo_usuario, nueva_contrasena):
+    """Guarda un nuevo usuario y contraseña en el archivo"""
+    with open(ARCHIVO_USUARIOS, "a") as archivo:
+        archivo.write(f"{nuevo_usuario},{nueva_contrasena}\n")
+
+# --- INICIALIZAR VARIABLES DE MEMORIA (SESSION STATE) ---
+if 'usuario_logeado' not in st.session_state:
+    st.session_state.usuario_logeado = None
+
+# --- PANTALLA PRINCIPAL: REGISTRO / LOGIN ---
+st.title("📱 Mi Control de Finanzas Pro")
+
+if st.session_state.usuario_logeado is None:
+    # Pestañas para separar el Inicio de Sesión del Registro
+    pestaña_login, pestaña_registro = st.tabs(["🔑 Iniciar Sesión", "📝 Registrarse"])
     
-    # Caja de texto para escribir el nombre de usuario
-    nombre = st.text_input("Ingresa tu nombre de usuario (en minúsculas y sin espacios):").lower().strip()
-    
-    if st.button("Entrar a mi cuenta"):
-        if nombre != "":
-            st.session_state.usuario = nombre
-            st.success(f"¡Bienvenido, {nombre.capitalize()}!")
-            st.rerun()
-        else:
-            st.warning("Por favor, escribe un nombre válido.")
+    # --- PESTAÑA DE REGISTRO ---
+    with pestaña_registro:
+        st.subheader("Crea una cuenta nueva")
+        reg_user = st.text_input("Elige un nombre de usuario:", key="reg_user").lower().strip()
+        reg_pass = st.text_input("Elige una contraseña:", type="password", key="reg_pass").strip()
+        
+        if st.button("Crear Cuenta", key="btn_registro"):
+            usuarios_existentes = cargar_usuarios()
+            
+            if reg_user == "" or reg_pass == "":
+                st.warning("⚠️ El usuario y la contraseña no pueden estar vacíos.")
+            elif reg_user in usuarios_existentes:
+                st.error("❌ Este usuario ya existe. Elige otro nombre.")
+            else:
+                registrar_usuario(reg_user, reg_pass)
+                st.success("✅ ¡Cuenta creada con éxito! Ahora puedes ir a la pestaña de 'Iniciar Sesión'.")
 
-# Si ya hay un usuario logueado, cargamos SU aplicación privada
+    # --- PESTAÑA DE INICIO DE SESIÓN ---
+    with pestaña_login:
+        st.subheader("Ingresa a tu cuenta")
+        login_user = st.text_input("Usuario:", key="login_user").lower().strip()
+        login_pass = st.text_input("Contraseña:", type="password", key="login_pass").strip()
+        
+        if st.button("Entrar", key="btn_login"):
+            usuarios_existentes = cargar_usuarios()
+            
+            # Verificar si el usuario existe y la contraseña coincide
+            if login_user in usuarios_existentes and usuarios_existentes[login_user] == login_pass:
+                st.session_state.usuario_logeado = login_user
+                st.success(f"¡Bienvenido de nuevo, {login_user.capitalize()}!")
+                st.rerun()
+            else:
+                st.error("❌ Usuario o contraseña incorrectos. Inténtalo de nuevo.")
+
+# --- PANTALLA DE LA APLICACIÓN (CUANDO YA INICIÓ SESIÓN) ---
 else:
-    user = st.session_state.usuario
+    user = st.session_state.usuario_logeado
 
-    # Nombres de archivos personalizados para cada usuario
+    # Archivos específicos para las finanzas de ESTE usuario
     ARCHIVO_SALDO = f"{user}_saldo.txt"
     ARCHIVO_HISTORIAL = f"{user}_historial.txt"
 
-    # --- FUNCIONES DE ARCHIVOS ---
+    # Funciones de finanzas personalizadas
     def cargar_saldo():
         if os.path.exists(ARCHIVO_SALDO):
             with open(ARCHIVO_SALDO, "r") as archivo:
@@ -53,17 +96,15 @@ else:
                 return archivo.readlines()
         return []
 
-    # Cargar saldo inicial del usuario actual
+    # Cargar el saldo en la memoria de la app
     if 'saldo' not in st.session_state:
         st.session_state.saldo = cargar_saldo()
 
-    # --- DISEÑO DE LA APP PRIVADA ---
-    st.subheader(f"Cuenta de: {user.capitalize()}")
+    # --- DISEÑO VISUAL DE LA APP ---
+    st.subheader(f"👤 Cuenta: {user.capitalize()}")
     
-    # Botón para cerrar sesión arriba a la derecha
     if st.button("🚪 Cerrar Sesión"):
-        st.session_state.usuario = None
-        # Limpiamos el saldo de la memoria para que el siguiente no lo vea
+        st.session_state.usuario_logeado = None
         if 'saldo' in st.session_state:
             del st.session_state.saldo
         st.rerun()
@@ -74,7 +115,7 @@ else:
 
     accion = st.radio("¿Qué deseas hacer hoy?", ["Ver Historial / Menú", "Registrar un INGRESO 📈", "Registrar un GASTO 📉"])
 
-    # Historial privado
+    # Historial
     if accion == "Ver Historial / Menú":
         st.write("### 📜 Historial de Movimientos")
         lista_movimientos = cargar_historial()
@@ -84,7 +125,7 @@ else:
             for movimiento in reversed(lista_movimientos):
                 st.text(movimiento.strip())
 
-    # Ingreso privado
+    # Ingreso
     elif accion == "Registrar un INGRESO 📈":
         monto_ingreso = st.number_input("¿Cuánto dinero vas a ingresar?", min_value=0, step=1000)
         if st.button("Confirmar Ingreso"):
@@ -95,7 +136,7 @@ else:
                 st.success(f"✅ ¡Ingreso de ${monto_ingreso:,} registrado!")
                 st.rerun()
 
-    # Gasto privado
+    # Gasto
     elif accion == "Registrar un GASTO 📉":
         monto_gasto = st.number_input("¿De cuánto fue tu gasto?", min_value=0, step=1000)
         if st.button("Confirmar Gasto"):
@@ -107,4 +148,4 @@ else:
                     st.error(f"🛑 ¡Gasto de ${monto_gasto:,} registrado!")
                     st.rerun()
                 else:
-                    st.warning("❌ No tienes suficiente dinero.")
+                    st.warning("❌ No tienes suficiente dinero para este gasto.")
