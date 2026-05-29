@@ -39,7 +39,21 @@ st.markdown("""
     .cajon-meta p { margin: 2px 0 !important; font-size: 0.85rem; opacity: 0.9; }
     .cajon-meta .porcentaje { font-size: 1.2rem; font-weight: bold; color: #2a9d8f; margin: 5px 0 !important; }
 
-    /* --- REGLAS ESPECÍFICAS PARA CELULARES (Pantallas menores a 768px) --- */
+    /* Estilos para los CAJONES DE PRÉSTAMOS (AZULES) */
+    .cajon-prestamo {
+        background-color: #102a43;
+        border: 1px solid #1982c4;
+        border-radius: 12px;
+        padding: 15px;
+        margin-bottom: 15px;
+        text-align: center;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    }
+    .cajon-prestamo h4 { margin: 0 0 5px 0 !important; color: #9bccf8 !important; font-size: 1.1rem; font-weight: bold; }
+    .cajon-prestamo p { margin: 2px 0 !important; font-size: 0.85rem; opacity: 0.9; }
+    .cajon-prestamo .monto-deuda { font-size: 1.25rem; font-weight: bold; color: #ffadad; margin: 5px 0 !important; }
+
+    /* --- REGLAS ESPECÍFICAS PARA CELULARES --- */
     @media (max-width: 768px) {
         .block-container { 
             padding-top: 0.6rem !important; 
@@ -49,8 +63,8 @@ st.markdown("""
         }
         .stTabs [data-baseweb="tab-list"] { gap: 2px !important; width: 100% !important; }
         .stTabs [data-baseweb="tab"] { 
-            padding: 8px 4px !important; 
-            font-size: 0.75rem !important; 
+            padding: 8px 2px !important; 
+            font-size: 0.68rem !important; 
             flex-grow: 1 !important; 
             text-align: center !important; 
         }
@@ -81,7 +95,7 @@ st.markdown("<style>.tarjeta-banco p {margin: 0 !important; font-size: 0.7rem; o
 st.markdown("<style>.tarjeta-banco h4 {margin: 2px 0 0 0 !important; font-size: 1rem; font-weight: 700; color: #457b9d !important;}</style>", unsafe_allow_html=True)
 
 st.markdown("<style>.item-historial { background-color: #1b1b1b; padding: 12px; border-radius: 8px; margin-bottom: 8px; border-left: 5px solid #ccc; font-family: monospace; font-size: 0.85rem;}</style>", unsafe_allow_html=True)
-st.markdown("<style>.ingreso-style { border-left-color: #2a9d8f !important; } .gasto-style { border-left-color: #e63946 !important; } .meta-style { border-left-color: #a29bfe !important; } .transferencia-style { border-left-color: #6c757d !important; }</style>", unsafe_allow_html=True)
+st.markdown("<style>.ingreso-style { border-left-color: #2a9d8f !important; } .gasto-style { border-left-color: #e63946 !important; } .meta-style { border-left-color: #a29bfe !important; } .transferencia-style { border-left-color: #6c757d !important; } .prestamo-style { border-left-color: #1982c4 !important; }</style>", unsafe_allow_html=True)
 
 # --- BASE DE DATOS ---
 ARCHIVO_USUARIOS = "usuarios_db.txt"
@@ -142,11 +156,13 @@ else:
     ARCH_FACTURAS = f"{user}_facturas.json"
     ARCH_METAS = f"{user}_metas.json"
     ARCH_LIMITES = f"{user}_limites.json"
+    ARCH_PRESTAMOS = f"{user}_prestamos.json" # <--- Nuevo archivo independiente
 
     def cargar_datos(tipo):
         if tipo == "hist": p = ARCH_HIST
         elif tipo == "facturas": p = ARCH_FACTURAS
         elif tipo == "limites": p = ARCH_LIMITES
+        elif tipo == "prestamos": p = ARCH_PRESTAMOS
         else: p = ARCH_METAS
         
         if os.path.exists(p):
@@ -157,6 +173,7 @@ else:
         if tipo == "hist": p = ARCH_HIST
         elif tipo == "facturas": p = ARCH_FACTURAS
         elif tipo == "limites": p = ARCH_LIMITES
+        elif tipo == "prestamos": p = ARCH_PRESTAMOS
         else: p = ARCH_METAS
         with open(p, "w") as f: json.dump(d, f)
 
@@ -173,6 +190,7 @@ else:
     facturas = cargar_datos("facturas")
     metas = cargar_datos("metas")
     limites = cargar_datos("limites")
+    prestamos = cargar_datos("prestamos") # <--- Carga independiente
     saldos = {b: cargar_saldo(b) for b in BANCOS}
     total_disponible = sum(saldos.values())
 
@@ -208,8 +226,8 @@ else:
         lbl = f"{MESES_DICT[fecha_obj.strftime('%m')]} {fecha_obj.strftime('%Y')}"
         if lbl == mes_seleccionado: hist_filtrado.append(h)
 
-    # --- NAVEGACIÓN EN TABS ---
-    tab_est, tab_hist, tab_mov, tab_fac, tab_met, tab_lim = st.tabs(["📈 Stats", "📊 Hist", "💸 Movs", "🧾 Recibos", "🎯 Alcancías", "📉 Topes"])
+    # --- NAVEGACIÓN EN TABS (Añadida pestaña 🤝 Préstamos) ---
+    tab_est, tab_hist, tab_mov, tab_fac, tab_met, tab_lim, tab_pre = st.tabs(["📈 Stats", "📊 Hist", "💸 Movs", "🧾 Recibos", "🎯 Alcancías", "📉 Topes", "🤝 Préstamos"])
 
     # --- SECCIÓN 1: ESTADÍSTICAS ---
     with tab_est:
@@ -254,6 +272,8 @@ else:
                     st.markdown(f'<div class="item-historial meta-style">🎯 <b>[{f_formateada}] Ahorro Meta ({h["banco"]}):</b> -${h["monto"]:,} <br> 🚀 Para: {h["det"]}</div>', unsafe_allow_html=True)
                 elif h['tipo'] == "Transferencia":
                     st.markdown(f'<div class="item-historial transferencia-style">🔄 <b>[{f_formateada}] Transferencia:</b> ${h["monto"]:,} <br> 🏦 Desde {h["banco"]} hacia {h["cat"]}</div>', unsafe_allow_html=True)
+                elif h['tipo'] == "Prestamo":
+                    st.markdown(f'<div class="item-historial prestamo-style">🤝 <b>[{f_formateada}] Dinero Prestado ({h["banco"]}):</b> -${h["monto"]:,} <br> 👤 A favor de: {h["det"]}</div>', unsafe_allow_html=True)
                 else:
                     st.markdown(f'<div class="item-historial gasto-style">📉 <b>[{f_formateada}] Gasto ({h["banco"]}):</b> -${h["monto"]:,} <br> 📁 {h["cat"]} | {h["det"]}</div>', unsafe_allow_html=True)
 
@@ -363,7 +383,7 @@ else:
                         data["fecha_vencimiento"] = (fecha_vence_obj + timedelta(days=30)).strftime("%Y-%m-%d")
                         guardar_datos("facturas", facturas); st.rerun()
 
-    # --- NUEVA SECCIÓN 5: METAS COMO CAJONES EN CUADRÍCULA ---
+    # --- SECCIÓN 5: METAS COMO CAJONES EN CUADRÍCULA ---
     with tab_met:
         st.write("### 🎯 Mis Alcancías de Ahorro")
         
@@ -383,23 +403,18 @@ else:
         if not metas: 
             st.info("No tienes alcancías creadas. Abre el menú de arriba para empezar a ahorrar.")
         else:
-            # Creamos una cuadrícula dinámica usando columnas de Streamlit (3 cajones por fila en PC)
             items_metas = list(metas.items())
-            
-            # Procesamos las metas en bloques de 3
             for i in range(0, len(items_metas), 3):
                 bloque = items_metas[i:i+3]
-                columnas = st.columns(3)  # Genera 3 cajones en horizontal
+                columnas = st.columns(3)
                 
                 for idx, (m_nombre, m_datos) in enumerate(bloque):
                     with columnas[idx]:
-                        # Cálculos matemáticos
                         objetivo = m_datos['objetivo']
                         ahorrado = m_datos['ahorrado']
                         porcentaje = (ahorrado / objetivo) * 100 if objetivo > 0 else 0
                         porcentaje = min(porcentaje, 100.0)
                         
-                        # Renderizado del Cajón
                         st.markdown(f"""
                         <div class="cajon-meta">
                             <h4>📦 {m_nombre}</h4>
@@ -409,15 +424,13 @@ else:
                         </div>
                         """, unsafe_allow_html=True)
                         
-                        # Barra de progreso nativa dentro del cajón
                         st.progress(porcentaje / 100)
                         
-                        # Botón para borrar alcancía
                         if st.button("🗑️ Romper", key=f"del_{m_nombre}", use_container_width=True):
                             del metas[m_nombre]
                             guardar_datos("metas", metas)
                             st.rerun()
-                st.write("") # Separador entre filas de la cuadrícula
+                st.write("")
 
     # --- SECCIÓN 6: CONFIGURACIÓN DE TOPES/LÍMITES ---
     with tab_lim:
@@ -436,6 +449,87 @@ else:
                 if m > 0:
                     if st.button(f"Eliminar Límite {c}: ${m:,} COP", key=f"del_lim_{c}", use_container_width=True):
                         del limites[c]; guardar_datos("limites", limites); st.rerun()
+
+    # --- NUEVA SECCIÓN 7: 🤝 HISTORIAL DE DINERO PRESTADO ---
+    with tab_pre:
+        st.write("### 🤝 Control de Dinero Prestado")
+        
+        # Formulario para registrar un préstamo nuevo
+        with st.expander("💸 Registrar Nuevo Préstamo"):
+            with st.form("form_crear_prestamo", clear_on_submit=True):
+                persona_p = st.text_input("¿A quién le prestaste? (Nombre):").strip()
+                banco_p = st.selectbox("¿De qué cuenta salió el dinero?", BANCOS)
+                txt_monto_p = st.text_input("Monto prestado (COP):")
+                if st.form_submit_button("Confirmar Préstamo 💸", use_container_width=True):
+                    monto_p = procesar_monto_texto(txt_monto_p)
+                    if persona_p and monto_p > 0 and monto_p <= saldos[banco_p]:
+                        # 1. Descontar del banco de donde salió la plata
+                        saldos[banco_p] -= monto_p
+                        guardar_saldo(banco_p, saldos[banco_p])
+                        
+                        # 2. Guardar en la base de datos de préstamos de forma única (llave aleatoria por si hay nombres repetidos)
+                        id_prestamo = f"{persona_p}_{datetime.now().strftime('%M%S')}"
+                        prestamos[id_prestamo] = {
+                            "persona": persona_p,
+                            "monto": monto_p,
+                            "banco_origen": banco_p,
+                            "fecha": hoy.strftime("%d/%m/%Y")
+                        }
+                        guardar_datos("prestamos", prestamos)
+                        
+                        # 3. Registrar salida en el historial general
+                        hist.append({"tipo": "Prestamo", "banco": banco_p, "monto": monto_p, "cat": "Deudas", "det": persona_p, "fecha": hoy.strftime("%Y-%m-%d")})
+                        guardar_datos("hist", hist)
+                        st.rerun()
+                    elif monto_p > saldos[banco_p]:
+                        st.error("❌ No tienes fondos suficientes en esa cuenta.")
+
+        st.write("---")
+        
+        if not prestamos:
+            st.info("¡Al día! Nadie te debe dinero actualmente. 😎")
+        else:
+            # Desplegar los cajones de deudas en una cuadrícula de 3 columnas
+            items_prestamos = list(prestamos.items())
+            for i in range(0, len(items_prestamos), 3):
+                bloque_p = items_prestamos[i:i+3]
+                columnas_p = st.columns(3)
+                
+                for idx, (p_id, p_datos) in enumerate(bloque_p):
+                    with columnas_p[idx]:
+                        st.markdown(f"""
+                        <div class="cajon-prestamo">
+                            <h4>👤 {p_datos['persona']}</h4>
+                            <p class="monto-deuda">-${p_datos['monto']:,}</p>
+                            <p style="font-size: 0.75rem; opacity: 0.8;">Salió de: {p_datos['banco_origen']}</p>
+                            <p style="font-size: 0.7rem; opacity: 0.5;">Prestado: {p_datos['fecha']}</p>
+                        </div>
+                        """, unsafe_allow_html=True)
+                        
+                        # Selector para elegir a qué cuenta te va a pagar de vuelta
+                        banco_retorno = st.selectbox("¿Dónde te pagó?", BANCOS, key=f"ret_{p_id}")
+                        
+                        if st.button("¡Ya me pagó! ✅", key=f"pay_{p_id}", use_container_width=True):
+                            # 1. Sumar el dinero de vuelta al banco seleccionado
+                            saldos[banco_retorno] += p_datos['monto']
+                            guardar_saldo(banco_retorno, saldos[banco_retorno])
+                            
+                            # 2. Registrar la entrada de dinero en el historial como ingreso
+                            hist.append({
+                                "tipo": "Ingreso", 
+                                "banco": banco_retorno, 
+                                "monto": p_datos['monto'], 
+                                "cat": "Ingreso", 
+                                "det": f"Pago recibido de {p_datos['persona']}", 
+                                "fecha": hoy.strftime("%Y-%m-%d")
+                            })
+                            guardar_datos("hist", hist)
+                            
+                            # 3. Eliminar la deuda de la base de datos
+                            del prestamos[p_id]
+                            guardar_datos("prestamos", prestamos)
+                            st.rerun()
+                st.write("")
 
     # --- BOTÓN DE SALIDA ---
     st.write("---")
