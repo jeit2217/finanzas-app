@@ -174,4 +174,98 @@ else:
                 if m_i > 0:
                     saldos[b_i] += m_i
                     guardar_saldo(b_i, saldos[b_i])
-                    hist.append({"tipo": "Ingreso", "banco": b_i, "monto": m_
+                    hist.append({"tipo": "Ingreso", "banco": b_i, "monto": m_i, "cat": "Ingreso", "det": d_i if d_i else "Ingreso general"})
+                    guardar_datos("hist", hist)
+                    st.rerun()
+        else:
+            st.markdown("### 📉 Descontar Gasto")
+            b_g = st.selectbox("¿De qué cuenta sale el dinero?", BANCOS)
+            cat_g = st.selectbox("Categoría:", CATEGORIAS)
+            m_g = st.number_input("Monto en COP:", min_value=0, step=1000, key="m_g_val")
+            paga_d = st.checkbox("¿Este gasto descuenta alguna deuda?")
+            id_d = st.text_input("ID de la Deuda:").upper().strip() if paga_d else ""
+            
+            if st.button("Confirmar Gasto 📉", use_container_width=True):
+                if m_g > 0:
+                    if m_g <= saldos[b_g]:
+                        if paga_d:
+                            if id_d in deudas and deudas[id_d]['estado'] == "activa":
+                                # Descontar
+                                deudas[id_d]['monto_pendiente'] -= m_g
+                                deudas[id_d]['historial_pagos'].append(f"Abono de ${m_g:,} COP desde {b_g}")
+                                
+                                # Verificar si se pagó completa
+                                if deudas[id_d]['monto_pendiente'] <= 0:
+                                    deudas[id_d]['monto_pendiente'] = 0
+                                    deudas[id_d]['estado'] = "pagada"
+                                    deudas[id_d]['historial_pagos'].append("🎉 ¡Deuda totalmente pagada!")
+                                
+                                guardar_datos("deudas", deudas)
+                            else:
+                                st.error("❌ El ID no corresponde a una deuda activa.")
+                                st.stop()
+                        
+                        saldos[b_g] -= m_g
+                        guardar_saldo(b_g, saldos[b_g])
+                        hist.append({"tipo": "Gasto", "banco": b_g, "monto": m_g, "cat": cat_g, "det": f"Abono a Deuda ID: {id_d}" if paga_d else f"Gasto ordinario: {cat_g}"})
+                        guardar_datos("hist", hist)
+                        st.rerun()
+                    else: st.error("❌ Fondos insuficientes.")
+
+    # --- PESTAÑA 4: DEUDAS (CON HISTORIAL DETALLADO) ---
+    with p_deu:
+        st.subheader("📌 Registrar Nueva Deuda")
+        id_n = st.text_input("Código ID Único (Sin espacios):", placeholder="Ej: JUAN01").upper().strip()
+        concepto_n = st.text_input("Concepto de la deuda:", placeholder="Ej: Préstamo para la moto")
+        m_n = st.number_input("Monto inicial de la deuda:", min_value=0, step=1000)
+        
+        if st.button("Crear Deuda 📌", use_container_width=True):
+            if id_n and m_n > 0 and concepto_n:
+                if id_n in deudas:
+                    st.error("❌ Este ID ya existe. Usa uno diferente.")
+                else:
+                    deudas[id_n] = {
+                        "concepto": concepto_n,
+                        "monto_inicial": m_n,
+                        "monto_pendiente": m_n,
+                        "estado": "activa",
+                        "historial_pagos": [f"Deuda creada por ${m_n:,} COP - Concepto: {concepto_n}"]
+                    }
+                    guardar_datos("deudas", deudas)
+                    st.success(f"✅ Deuda '{id_n}' creada exitosamente.")
+                    st.rerun()
+            else:
+                st.warning("Completa todos los campos para registrar la deuda.")
+        
+        st.write("---")
+        
+        # Filtrar deudas activas y pagadas
+        deudas_activas = {k: v for k, v in deudas.items() if v.get('estado', 'activa') == "activa"}
+        deudas_pagadas = {k: v for k, v in deudas.items() if v.get('estado', 'activa') == "pagada"}
+        
+        # 1. MOSTRAR DEUDAS ACTIVAS
+        st.markdown("### 📋 Deudas Activas (Pendientes)")
+        if deudas_activas:
+            for k, v in deudas_activas.items():
+                with st.expander(f"🔴 ID: {k} | Pendiente: ${v['monto_pendiente']:,} COP"):
+                    st.markdown(f"**Concepto:** {v['concepto']}")
+                    st.markdown(f"**Monto Inicial:** ${v['monto_inicial']:,} COP")
+                    st.markdown("**Historial de esta deuda:**")
+                    for p in v['historial_pagos']:
+                        st.write(f"• {p}")
+        else:
+            st.info("🎉 ¡Felicidades! No tienes deudas pendientes.")
+            
+        st.write("---")
+        
+        # 2. MOSTRAR DEUDAS TOTALMENTE PAGADAS
+        st.markdown("### ✅ Historial de Deudas Pagadas")
+        if deudas_pagadas:
+            for k, v in deudas_pagadas.items():
+                with st.expander(f"🟢 [PAGADA] ID: {k} | Total: ${v['monto_inicial']:,} COP"):
+                    st.markdown(f"**Concepto:** {v['concepto']}")
+                    st.markdown("**Historial completo de pagos:**")
+                    for p in v['historial_pagos']:
+                        st.write(f"• {p}")
+        else:
+            st.caption("Aún no tienes deudas archivadas como pagadas.")
