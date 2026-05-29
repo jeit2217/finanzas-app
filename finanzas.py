@@ -7,18 +7,15 @@ ARCHIVO_USUARIOS = "usuarios_db.txt"
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 st.set_page_config(page_title="Finanzas Pro", page_icon="💰", layout="centered")
 
-# --- DISEÑO VISUAL BASE (MODO OSCURO COMPLETO Y CONTROL INTEGRADO) ---
+# --- DISEÑO VISUAL BASE (SIEMPRE MODO OSCURO AUTOMÁTICO) ---
 st.markdown("<style>#MainMenu {visibility: hidden;} footer {visibility: hidden;} header {visibility: hidden;} .stAppDeployButton {display:none;}</style>", unsafe_allow_html=True)
 
-# Forzar colores oscuros limpios en la interfaz sin bloquear componentes nativos
+# Forzar colores oscuros limpios en la interfaz central
 st.markdown("<style>.stApp { background-color: #121212 !important; color: #e0e0e0 !important; }</style>", unsafe_allow_html=True)
 st.markdown("<style>h1, h2, h3, h4, p, label, .stMarkdown { color: #e0e0e0 !important; }</style>", unsafe_allow_html=True)
-st.markdown("<style>.tarjeta-saldo { background: linear-gradient(135deg, #1f4068 0%, #162447 100%); color: white !important; padding: 30px; border-radius: 16px; box-shadow: 0px 10px 25px rgba(0,0,0,0.15); text-align: center; margin-bottom: 30px; border: 1px solid rgba(255,255,255,0.1);}</style>", unsafe_allow_html=True)
+st.markdown("<style>.tarjeta-saldo { background: linear-gradient(135deg, #1f4068 0%, #162447 100%); color: white !important; padding: 30px; border-radius: 16px; box-shadow: 0px 10px 25px rgba(0,0,0,0.15); text-align: center; margin-bottom: 25px; border: 1px solid rgba(255,255,255,0.1);}</style>", unsafe_allow_html=True)
 st.markdown("<style>.item-historial { background-color: #1b1b1b; color: #e0e0e0; border: 1px solid #333; padding: 14px 18px; border-radius: 10px; margin-bottom: 10px; border-left: 6px solid #ccc; box-shadow: 0px 4px 6px rgba(0,0,0,0.02); font-family: monospace; font-size: 0.95rem;}</style>", unsafe_allow_html=True)
 st.markdown("<style>.ingreso-style { border-left-color: #2a9d8f !important; } .gasto-style { border-left-color: #e63946 !important; }</style>", unsafe_allow_html=True)
-
-# Estilo para los textos internos del menú lateral
-st.markdown("<style>[data-testid='stSidebar'] .stRadio label p {font-size: 1.15rem !important; font-weight: 600 !important; padding: 5px 0; color: #e0e0e0 !important;}</style>", unsafe_allow_html=True)
 st.markdown("<style>.tarjeta-saldo h3 {margin: 0 !important; font-size: 0.95rem !important; letter-spacing: 1.5px; opacity: 0.85; color: #f1faee !important;} .tarjeta-saldo h1 {margin: 10px 0 0 0 !important; font-size: 2.6rem !important; font-weight: 700 !important; color: #ffffff !important;}</style>", unsafe_allow_html=True)
 
 # --- FUNCIONES PARA EL SISTEMA DE USUARIOS ---
@@ -76,7 +73,7 @@ if st.session_state.usuario_logeado is None:
             else:
                 st.error("❌ Credenciales incorrectas. Verifica tus datos.")
 
-# --- PANTALLA PRINCIPAL ADENTRO DE LA APP ---
+# --- PANTALLA PRINCIPAL ADENTRO DE LA APP (SIN MENÚ LATERAL INTERFERENTE) ---
 else:
     user = st.session_state.usuario_logeado
 
@@ -107,18 +104,13 @@ else:
     if 'saldo' not in st.session_state:
         st.session_state.saldo = cargar_saldo()
 
-    # --- MENÚ DE ACCIONES AL SIDEBAR ---
-    with st.sidebar:
-        st.markdown(f"👤 Cuenta activa:<br><b style='font-size:1.3rem; color:#457b9d;'>{user.capitalize()}</b>", unsafe_allow_html=True)
-        st.write("---")
-        st.markdown("### 🎯 Operaciones")
-        accion = st.radio(
-            "Elige una acción:", 
-            ["📊 Panel General", "📈 Registrar Ingreso", "📉 Registrar Gasto"],
-            label_visibility="collapsed"
-        )
-        st.write("---")
-        if st.button("🚪 Cerrar Sesión", use_container_width=True):
+    # Encabezado superior con botón de salida discreto
+    col_user, col_logout = st.columns([3, 1])
+    with col_user:
+        st.markdown(f"👤 Hola, <b style='color:#457b9d;'>{user.capitalize()}</b>", unsafe_allow_html=True)
+    with col_logout:
+        if st.button("🚪 Salir", use_container_width=True):
+            st.session_state.usuario_logged = None
             st.session_state.usuario_logeado = None
             if 'saldo' in st.session_state:
                 del st.session_state.saldo
@@ -135,13 +127,16 @@ else:
         unsafe_allow_html=True
     )
 
-    # --- LÓGICA DE LAS SECCIONES ---
-    if accion == "📊 Panel General":
-        st.markdown("<h3 style='margin-bottom: 15px;'>📜 Historial de Actividad</h3>", unsafe_allow_html=True)
+    # --- NUEVO MENÚ CENTRAL DE OPERACIONES (Pestañas fijas que nunca se ocultan) ---
+    pest_panel, pest_ingreso, pest_gasto = st.tabs(["📊 Panel General", "📈 Registrar Ingreso", "📉 Registrar Gasto"])
+
+    # --- CONTENIDO PESTAÑA 1: HISTORIAL ---
+    with pest_panel:
+        st.markdown("<div style='margin-top: 15px;'></div>", unsafe_allow_html=True)
         lista_movimientos = cargar_historial()
         
         if len(lista_movimientos) == 0:
-            st.info("No hay transacciones registradas todavía. Usa el panel lateral para añadir movimientos.")
+            st.info("No hay transacciones registradas todavía. Pasa a las siguientes pestañas para añadir movimientos.")
         else:
             for movimiento in reversed(lista_movimientos):
                 texto = movimiento.strip()
@@ -150,13 +145,14 @@ else:
                 else:
                     st.markdown(f'<div class="item-historial gasto-style">{texto}</div>', unsafe_allow_html=True)
 
-    elif accion == "📈 Registrar Ingreso":
+    # --- CONTENIDO PESTAÑA 2: INGRESOS ---
+    with pest_ingreso:
+        st.markdown("<div style='margin-top: 15px;'></div>", unsafe_allow_html=True)
         st.markdown("### 📈 Añadir Fondos")
+        monto_ingreso = st.number_input("Monto en pesos (COP):", min_value=0, step=1000, value=0, key="input_ingreso")
+        detalle_ingreso = st.text_input("¿De qué es este ingreso? (Ej: Sueldo, Venta, Regalo):", placeholder="Escribe el detalle aquí...", key="input_det_ingreso").strip()
         
-        monto_ingreso = st.number_input("Monto en pesos (COP):", min_value=0, step=1000, value=0)
-        detalle_ingreso = st.text_input("¿De qué es este ingreso? (Ej: Sueldo, Venta, Regalo):", placeholder="Escribe el detalle aquí...").strip()
-        
-        if st.button("Confirmar Ingreso 📈", use_container_width=True):
+        if st.button("Confirmar Ingreso 📈", use_container_width=True, key="btn_confirmar_ingreso"):
             if monto_ingreso > 0:
                 if detalle_ingreso == "":
                     detalle_ingreso = "Ingreso general"
@@ -169,13 +165,14 @@ else:
             else:
                 st.warning("Por favor ingresa un valor válido.")
 
-    elif accion == "📉 Registrar Gasto":
+    # --- CONTENIDO PESTAÑA 3: GASTOS ---
+    with pest_gasto:
+        st.markdown("<div style='margin-top: 15px;'></div>", unsafe_allow_html=True)
         st.markdown("### 📉 Registrar un Gasto")
+        monto_gasto = st.number_input("Monto en pesos (COP):", min_value=0, step=1000, value=0, key="input_gasto")
+        detalle_gasto = st.text_input("¿En qué gastaste este dinero? (Ej: Almuerzo, Transporte):", placeholder="Escribe el detalle aquí...", key="input_det_gasto").strip()
         
-        monto_gasto = st.number_input("Monto en pesos (COP):", min_value=0, step=1000, value=0)
-        detalle_gasto = st.text_input("¿En qué gastaste este dinero? (Ej: Almuerzo, Transporte):", placeholder="Escribe el detalle aquí...").strip()
-        
-        if st.button("Descontar Gasto 📉", use_container_width=True):
+        if st.button("Descontar Gasto 📉", use_container_width=True, key="btn_confirmar_gasto"):
             if monto_gasto > 0:
                 if monto_gasto <= st.session_state.saldo:
                     if detalle_gasto == "":
