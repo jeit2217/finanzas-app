@@ -53,7 +53,7 @@ st.markdown("""
     .cajon-prestamo p { margin: 2px 0 !important; font-size: 0.85rem; opacity: 0.9; }
     .cajon-prestamo .monto-deuda { font-size: 1.25rem; font-weight: bold; color: #ffadad; margin: 5px 0 !important; }
 
-    /* Alerta psicológica del convertidor de trabajo */
+    /* Alerta psicológica del convertidor de trabajo quincenal */
     .alerta-psicologica {
         background-color: #3b2314 !important;
         border-left: 6px solid #f39c12 !important;
@@ -168,7 +168,7 @@ else:
     ARCH_METAS = f"{user}_metas.json"
     ARCH_LIMITES = f"{user}_limites.json"
     ARCH_PRESTAMOS = f"{user}_prestamos.json"
-    ARCH_TRABAJO = f"{user}_trabajo.json" # <--- Nuevo archivo de configuración psicológica
+    ARCH_TRABAJO = f"{user}_trabajo.json"
 
     def cargar_datos(tipo):
         if tipo == "hist": p = ARCH_HIST
@@ -205,7 +205,7 @@ else:
     metas = cargar_datos("metas")
     limites = cargar_datos("limites")
     prestamos = cargar_datos("prestamos")
-    config_trabajo = cargar_datos("trabajo") # <--- Carga de configuración laboral
+    config_trabajo = cargar_datos("trabajo")
     saldos = {b: cargar_saldo(b) for b in BANCOS}
     total_disponible = sum(saldos.values())
 
@@ -324,216 +324,23 @@ else:
         elif modo_actual == "gas":
             st.write("### 📉 Registrar Gasto")
             
-            # --- LÓGICA DINÁMICA DEL CONVERTIDOR PSICOLÓGICO (En tiempo real) ---
+            # --- NUEVA LÓGICA DE ALERTA PSICOLÓGICA QUINCENAL ---
             txt_m_g = st.text_input("Monto en COP:", key="monto_gasto_realtime")
             m_g_temp = procesar_monto_texto(txt_m_g)
             
-            # Si el usuario configuró su salario, calculamos el valor de su tiempo antes de que guarde
             if config_trabajo and m_g_temp > 0:
-                sueldo = config_trabajo.get("sueldo", 0)
-                horas = config_trabajo.get("horas", 160)
-                if sueldo > 0 and horas > 0:
-                    valor_hora = sueldo / horas
+                sueldo_quincenal = config_trabajo.get("sueldo", 0)
+                horas_quincenales = config_trabajo.get("horas", 80)
+                if sueldo_quincenal > 0 and horas_quincenales > 0:
+                    valor_hora = sueldo_quincenal / horas_quincenales
                     horas_necesarias = m_g_temp / valor_hora
                     
-                    if horas_necesarias >= 8:
+                    # Adaptación de mensajes a escalas lógicas quincenales (Horas -> Días -> Quincenas)
+                    if horas_necesarias >= horas_quincenales:
+                        quincenas = horas_necesarias / horas_quincenales
+                        msg_psico = f"⏳ Alerta: Este gasto equivale a **{quincenas:.1f} quincenas** de tu salario de trabajo."
+                    elif horas_necesarias >= 8:
                         dias = horas_necesarias / 8
-                        msg_psico = f"⏳ Alerta: Este gasto equivale a **{dias:.1f} días** completos de tu esfuerzo laboral."
+                        msg_psico = f"⏳ Alerta: Este gasto equivale a **{dias:.1f} días** completos de tu jornada laboral."
                     else:
-                        msg_psico = f"⏳ Alerta: Este gasto equivale a **{horas_necesarias:.1f} horas** de tu vida sentado trabajando."
-                    
-                    st.markdown(f'<div class="alerta-psicologica">🛒 {msg_psico}<br><span style="font-size:0.75rem; opacity:0.8;">¿Realmente vale la pena cambiar ese tiempo de tu vida por este artículo? 🤔</span></div>', unsafe_allow_html=True)
-
-            with st.form("form_gasto", clear_on_submit=True):
-                b_g = st.selectbox("¿De dónde sale el dinero?", BANCOS)
-                cat_g = st.selectbox("Categoría:", CATEGORIAS)
-                det_g = st.text_input("Detalle del gasto:")
-                
-                if st.form_submit_button("Confirmar Gasto 📉", use_container_width=True):
-                    if m_g_temp > 0 and m_g_temp <= saldos[b_g]:
-                        saldos[b_g] -= m_g_temp; guardar_saldo(b_g, saldos[b_g])
-                        hist.append({"tipo": "Gasto", "banco": b_g, "monto": m_g_temp, "cat": cat_g, "det": det_g if det_g else f"Gasto en {cat_g}", "fecha": hoy_str})
-                        guardar_datos("hist", hist); st.rerun()
-                    elif m_g_temp > saldos[b_g]:
-                        st.error("❌ No tienes fondos suficientes en esa cuenta.")
-
-        elif modo_actual == "meta":
-            if not metas: st.warning("Crea una meta primero.")
-            else:
-                st.write("### 🎯 Guardar para una Meta")
-                with st.form("form_meta", clear_on_submit=True):
-                    b_m = st.selectbox("¿Cuenta origen?", BANCOS)
-                    meta_dest = st.selectbox("¿Para cuál objetivo?", list(metas.keys()))
-                    txt_m_m = st.text_input("Monto a ahorrar:")
-                    if st.form_submit_button("Confirmar Ahorro 🚀", use_container_width=True):
-                        m_m = procesar_monto_texto(txt_m_m)
-                        if m_m > 0 and m_m <= saldos[b_m]:
-                            saldos[b_m] -= m_m; guardar_saldo(b_m, saldos[b_m])
-                            metas[meta_dest]['ahorrado'] += m_m
-                            guardar_datos("metas", metas)
-                            hist.append({"tipo": "Meta", "banco": b_m, "monto": m_m, "cat": "Ahorro", "det": meta_dest, "fecha": hoy_str})
-                            guardar_datos("hist", hist); st.rerun()
-
-        elif modo_actual == "trans":
-            st.write("### 🔄 Transferir Dinero")
-            with st.form("form_transferencia", clear_on_submit=True):
-                b_origen = st.selectbox("Desde cuenta:", BANCOS)
-                b_destino = st.selectbox("Hacia cuenta:", BANCOS)
-                txt_m_t = st.text_input("Monto:")
-                if st.form_submit_button("Confirmar 🔄", use_container_width=True):
-                    m_t = procesar_monto_texto(txt_m_t)
-                    if b_origen != b_destino and m_t > 0 and m_t <= saldos[b_origen]:
-                        saldos[b_origen] -= m_t; saldos[b_destino] += m_t
-                        guardar_saldo(b_origen, saldos[b_origen]); guardar_saldo(b_destino, saldos[b_destino])
-                        hist.append({"tipo": "Transferencia", "banco": b_origen, "monto": m_t, "cat": b_destino, "det": f"A {b_destino}", "fecha": hoy_str})
-                        guardar_datos("hist", hist); st.rerun()
-
-    # --- SECCIÓN 4: RECIBOS ---
-    with tab_fac:
-        st.write("### 🧾 Control de Recibos")
-        with st.form("form_crear_factura", clear_on_submit=True):
-            nombre_f = st.text_input("Nombre del Servicio:")
-            cat_f = st.selectbox("Categoría:", CATEGORIAS, index=4) 
-            txt_m_f = st.text_input("Costo mensual:")
-            fecha_vencimiento_inicial = st.date_input("Próximo vencimiento:", value=hoy)
-            if st.form_submit_button("Registrar 🧾", use_container_width=True):
-                m_f = procesar_monto_texto(txt_m_f)
-                if nombre_f and m_f > 0:
-                    facturas[nombre_f] = {"monto": m_f, "fecha_vencimiento": fecha_vencimiento_inicial.strftime("%Y-%m-%d"), "cat": cat_f, "ultimo_pago": "Nunca"}
-                    guardar_datos("facturas", facturas); st.rerun()
-
-        if facturas:
-            for name, data in list(facturas.items()):
-                fecha_vence_obj = datetime.strptime(data["fecha_vencimiento"], "%Y-%m-%d")
-                monto_fac = data["monto"]
-                dias_restantes = (fecha_vence_obj.date() - hoy.date()).days
-                clase_css = "factura-vencida" if dias_restantes < 0 else ("factura-alerta" if dias_restantes <= 5 else "factura-al-dia")
-                
-                st.markdown(f'<div class="{clase_css}"><h4>{name}</h4><p>${monto_fac:,} COP | Vence: {fecha_vence_obj.strftime("%d/%m")}</p><p style="font-size:0.7rem;">Último: {data.get("ultimo_pago", "Nunca")}</p></div>', unsafe_allow_html=True)
-                banco_pago = st.selectbox("Pagar con:", BANCOS, key=f"b_{name}")
-                if st.button("PAGAR NOW 💸", key=f"p_{name}"):
-                    if saldos[banco_pago] >= monto_fac:
-                        saldos[banco_pago] -= monto_fac; guardar_saldo(banco_pago, saldos[banco_pago])
-                        hist.append({"tipo": "Gasto", "banco": banco_pago, "monto": monto_fac, "cat": data["cat"], "det": f"Factura: {name}", "fecha": hoy_str})
-                        guardar_datos("hist", hist)
-                        data["ultimo_pago"] = hoy.strftime("%d/%m/%Y")
-                        data["fecha_vencimiento"] = (fecha_vence_obj + timedelta(days=30)).strftime("%Y-%m-%d")
-                        guardar_datos("facturas", facturas); st.rerun()
-
-    # --- SECCIÓN 5: METAS ---
-    with tab_met:
-        st.write("### 🎯 Mis Alcancías de Ahorro")
-        with st.expander("➕ Crear Nueva Alcancía / Meta"):
-            with st.form("form_crear_meta", clear_on_submit=True):
-                nombre_m = st.text_input("¿Qué deseas lograr? (Ej: Viaje, Celular)").strip()
-                txt_total_m = st.text_input("Precio total estimado (COP):")
-                if st.form_submit_button("Establecer Objetivo 🎯", use_container_width=True):
-                    total_m = procesar_monto_texto(txt_total_m)
-                    if nombre_m and total_m > 0:
-                        metas[nombre_m] = {"objetivo": total_m, "ahorrado": 0}
-                        guardar_datos("metas", metas); st.rerun()
-
-        st.write("---")
-        if not metas: st.info("No tienes alcancías creadas.")
-        else:
-            items_metas = list(metas.items())
-            for i in range(0, len(items_metas), 3):
-                bloque = items_metas[i:i+3]
-                columnas = st.columns(3)
-                for idx, (m_nombre, m_datos) in enumerate(bloque):
-                    with columnas[idx]:
-                        objetivo = m_datos['objetivo']
-                        ahorrado = m_datos['ahorrado']
-                        porcentaje = (ahorrado / objetivo) * 100 if objetivo > 0 else 0
-                        porcentaje = min(porcentaje, 100.0)
-                        
-                        st.markdown(f'<div class="cajon-meta"><h4>📦 {m_nombre}</h4><p class="porcentaje">{porcentaje:.0f}%</p><p><b>Ahorrado:</b><br>${ahorrado:,}</p><p style="opacity: 0.6; font-size: 0.75rem;">Meta: ${objetivo:,}</p></div>', unsafe_allow_html=True)
-                        st.progress(porcentaje / 100)
-                        if st.button("🗑️ Romper", key=f"del_{m_nombre}", use_container_width=True):
-                            del metas[m_nombre]; guardar_datos("metas", metas); st.rerun()
-                st.write("")
-
-    # --- SECCIÓN 6: CONFIGURACIÓN DE TOPES + CONFIG TRABAJO ---
-    with tab_lim:
-        st.write("### 📉 Configurar Límites Mensuales")
-        with st.form("form_limites"):
-            cat_limite = st.selectbox("Categoría a limitar:", CATEGORIAS)
-            monto_limite_txt = st.text_input("Presupuesto mensual (COP):")
-            if st.form_submit_button("Guardar Límite 💾", use_container_width=True):
-                m_lim = procesar_monto_texto(monto_limite_txt)
-                if m_lim >= 0:
-                    limites[cat_limite] = m_lim
-                    guardar_datos("limites", limites); st.rerun()
-        
-        if limites:
-            for c, m in list(limites.items()):
-                if m > 0:
-                    if st.button(f"Eliminar Límite {c}: ${m:,} COP", key=f"del_lim_{c}", use_container_width=True):
-                        del limites[c]; guardar_datos("limites", limites); st.rerun()
-                        
-        # --- NUEVO FORMULARIO INDEPENDIENTE: CONVERTIDOR DE TRABAJO ---
-        st.write("---")
-        st.write("### ⏳ Configuración de Psicología del Gasto")
-        st.write("Introduce tus datos laborales para calcular el valor real de tu tiempo:")
-        
-        sueldo_actual_conf = config_trabajo.get("sueldo", 0)
-        horas_actual_conf = config_trabajo.get("horas", 160)
-        
-        with st.form("form_psico_trabajo"):
-            txt_sueldo = st.text_input("¿Cuánto te ganas neto al mes (COP)?", value=f"{sueldo_actual_conf:,}" if sueldo_actual_conf else "")
-            horas_lab = st.number_input("¿Cuántas horas trabajas al mes?", min_value=1, max_value=400, value=horas_actual_conf)
-            
-            if st.form_submit_button("Guardar Configuración Laboral 💾", use_container_width=True):
-                sueldo_num = procesar_monto_texto(txt_sueldo)
-                if sueldo_num > 0 and horas_lab > 0:
-                    config_trabajo = {"sueldo": sueldo_num, "horas": horas_lab}
-                    guardar_datos("trabajo", config_trabajo)
-                    st.success("¡Configuración de tiempo guardada!")
-                    st.rerun()
-                    
-        if config_trabajo:
-            v_hora = config_trabajo['sueldo'] / config_trabajo['horas']
-            st.info(f"💡 Tu hora de trabajo equivale actualmente a: **${int(v_hora):,} COP**")
-
-    # --- SECCIÓN 7: 🤝 HISTORIAL DE DINERO PRESTADO ---
-    with tab_pre:
-        st.write("### 🤝 Control de Dinero Prestado")
-        with st.expander("💸 Registrar Nuevo Préstamo"):
-            with st.form("form_crear_prestamo", clear_on_submit=True):
-                persona_p = st.text_input("¿A quién le prestaste? (Nombre):").strip()
-                banco_p = st.selectbox("¿De qué cuenta salió el dinero?", BANCOS)
-                txt_monto_p = st.text_input("Monto prestado (COP):")
-                if st.form_submit_button("Confirmar Préstamo 💸", use_container_width=True):
-                    monto_p = procesar_monto_texto(txt_monto_p)
-                    if persona_p and monto_p > 0 and monto_p <= saldos[banco_p]:
-                        saldos[banco_p] -= monto_p; guardar_saldo(banco_p, saldos[banco_p])
-                        id_prestamo = f"{persona_p}_{datetime.now().strftime('%M%S')}"
-                        prestamos[id_prestamo] = {"persona": persona_p, "monto": monto_p, "banco_origen": banco_p, "fecha": hoy.strftime("%d/%m/%Y")}
-                        guardar_datos("prestamos", prestamos)
-                        hist.append({"tipo": "Prestamo", "banco": banco_p, "monto": monto_p, "cat": "Deudas", "det": persona_p, "fecha": hoy.strftime("%Y-%m-%d")})
-                        guardar_datos("hist", hist); st.rerun()
-                    elif monto_p > saldos[banco_p]: st.error("❌ No tienes fondos suficientes.")
-
-        st.write("---")
-        if not prestamos: st.info("¡Al día! Nadie te debe dinero actualmente. 😎")
-        else:
-            items_prestamos = list(prestamos.items())
-            for i in range(0, len(items_prestamos), 3):
-                bloque_p = items_prestamos[i:i+3]
-                columnas_p = st.columns(3)
-                for idx, (p_id, p_datos) in enumerate(bloque_p):
-                    with columnas_p[idx]:
-                        st.markdown(f'<div class="cajon-prestamo"><h4>👤 {p_datos["persona"]}</h4><p class="monto-deuda">-${p_datos["monto"]:,}</p><p style="font-size: 0.75rem; opacity: 0.8;">Salió de: {p_datos["banco_origen"]}</p><p style="font-size: 0.7rem; opacity: 0.5;">Prestado: {p_datos["fecha"]}</p></div>', unsafe_allow_html=True)
-                        banco_retorno = st.selectbox("¿Dónde te pagó?", BANCOS, key=f"ret_{p_id}")
-                        if st.button("¡Ya me pagó! ✅", key=f"pay_{p_id}", use_container_width=True):
-                            saldos[banco_retorno] += p_datos['monto']; guardar_saldo(banco_retorno, saldos[banco_retorno])
-                            hist.append({"tipo": "Ingreso", "banco": banco_retorno, "monto": p_datos['monto'], "cat": "Ingreso", "det": f"Pago recibido de {p_datos['persona']}", "fecha": hoy.strftime("%Y-%m-%d")})
-                            guardar_datos("hist", hist)
-                            del prestamos[p_id]; guardar_datos("prestamos", prestamos); st.rerun()
-                st.write("")
-
-    # --- BOTÓN DE SALIDA ---
-    st.write("---")
-    if st.button("🚪 Cerrar Sesión", use_container_width=True):
-        st.session_state.usuario_logeado = None
-        st.rerun()
+                        msg_psico = f"⏳ Alerta: Este gasto equivale a **
