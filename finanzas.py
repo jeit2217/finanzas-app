@@ -13,8 +13,7 @@ with st.sidebar:
     tema = st.radio("Elige el estilo visual:", ["Modo Claro ☀️", "Modo Oscuro 🌙"], label_visibility="collapsed")
     st.write("---")
 
-# --- DISEÑO VISUAL ADAPTATIVO (CSS FIJO SIN F-STRING) ---
-# Escondemos menús nativos y aplicamos estilos base comunes
+# --- DISEÑO VISUAL ADAPTATIVO (ESTILOS BASE EN TEXTO LIMPIO) ---
 st.markdown(
     """
     <style>
@@ -59,7 +58,7 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-# Inyectamos solo los colores del tema seleccionado para evitar romper las llaves de Python
+# --- INYECCIÓN DE COLORES SEGÚN EL TEMA SELECCIONADO ---
 if tema == "Modo Oscuro 🌙":
     st.markdown(
         """
@@ -77,4 +76,6 @@ else:
         <style>
         .stApp { background-color: #f8f9fa !important; color: #212529 !important; }
         h1, h2, h3, h4, p, label, .stMarkdown { color: #212529 !important; }
-        .tarjeta-saldo { background
+        .tarjeta-saldo { background: linear-gradient(135deg, #1d3557 0%, #457b9d 100%); }
+        .item-historial { background-color: #ffffff; color: #212529; border: 1px solid #e9ecef; }
+        </style>
