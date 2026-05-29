@@ -4,150 +4,71 @@ import os
 # --- ARCHIVO BASE DE DATOS DE USUARIOS ---
 ARCHIVO_USUARIOS = "usuarios_db.txt"
 
-# --- CONFIGURACIÓN DE LA PÁGINA Y DISEÑO PREMIUM ---
+# --- CONFIGURACIÓN DE LA PÁGINA ---
 st.set_page_config(page_title="Finanzas Pro", page_icon="💰", layout="centered")
 
-# Truco CSS avanzado para cambiar fondos, esconder botones de GitHub y mejorar la estética
-st.markdown(
-    """
-    <style>
-    #MainMenu {visibility: hidden;} footer {visibility: hidden;} header {visibility: hidden;} .stAppDeployButton {display:none;}
-    
-    /* Fondo general de la app y tipografía */
-    .stApp {
-        background-color: #f8f9fa;
-    }
-    
-    /* Estilo para la tarjeta del Saldo */
-    .tarjeta-saldo {
-        background: linear-gradient(135deg, #1d3557 0%, #457b9d 100%);
-        color: white;
-        padding: 25px;
-        border-radius: 15px;
-        box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.1);
-        text-align: center;
-        margin-bottom: 25px;
-    }
-    .tarjeta-saldo h3 {
-        margin: 0;
-        font-size: 1.1rem;
-        opacity: 0.9;
-        color: #e63946 !important; /* Detalle de color elegante */
-    }
-    .tarjeta-saldo h1 {
-        margin: 5px 0 0 0;
-        font-size: 2.3rem;
-        font-weight: 700;
-    }
-    
-    /* Estilo para los bloques del historial */
-    .item-historial {
-        background-color: white;
-        padding: 12px 15px;
-        border-radius: 8px;
-        margin-bottom: 8px;
-        border-left: 5px solid #ccc;
-        box-shadow: 0px 2px 5px rgba(0,0,0,0.05);
-    }
-    .ingreso-style { border-left-color: #2a9d8f; }
-    .gasto-style { border-left-color: #e63946; }
-    </style>
-    """,
-    unsafe_allow_html=True
-)
+# --- MENÚ LATERAL (SIDEBAR) - CONTROL DE SESIÓN Y TEMA ---
+with st.sidebar:
+    st.markdown("<h2 style='text-align: center; margin-bottom: 0;'>🎨 Apariencia</h2>", unsafe_allow_html=True)
+    # Selector de modo de color
+    tema = st.radio("Elige el estilo visual:", ["Modo Claro ☀️", "Modo Oscuro 🌙"], label_visibility="collapsed")
+    st.write("---")
 
-# --- FUNCIONES DE USUARIOS ---
-def cargar_usuarios():
-    usuarios = {}
-    if os.path.exists(ARCHIVO_USUARIOS):
-        with open(ARCHIVO_USUARIOS, "r") as archivo:
-            for linea in archivo:
-                partes = linea.strip().split(",")
-                if len(partes) == 2:
-                    usuarios[partes[0]] = partes[1]
-    return usuarios
-
-def registrar_usuario(nuevo_usuario, nueva_contrasena):
-    with open(ARCHIVO_USUARIOS, "a") as archivo:
-        archivo.write(f"{nuevo_usuario},{nueva_contrasena}\n")
-
-# --- INICIALIZAR VARIABLES ---
-if 'usuario_logeado' not in st.session_state:
-    st.session_state.usuario_logeado = None
-
-# --- PANTALLA DE ACCESO (LOGIN / REGISTRO) ---
-if st.session_state.usuario_logeado is None:
-    st.markdown("<h1 style='text-align: center; color: #1d3557;'>📱 Control de Finanzas Pro</h1>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align: center; color: #6c757d;'>Gestiona tus ingresos y gastos de forma privada y organizada.</p>", unsafe_allow_html=True)
-    
-    # Caja contenedora visual para el login
-    with st.container():
-        pestaña_login, pestaña_registro = st.tabs(["🔑 Iniciar Sesión", "📝 Registrarse"])
-        
-        with pestaña_registro:
-            st.write("### Crea tu cuenta")
-            reg_user = st.text_input("Elige tu nombre de usuario:", key="reg_user").lower().strip()
-            reg_pass = st.text_input("Elige tu contraseña:", type="password", key="reg_pass").strip()
-            
-            if st.button("Crear Cuenta ✨", key="btn_registro", use_container_width=True):
-                usuarios_existentes = cargar_usuarios()
-                if reg_user == "" or reg_pass == "":
-                    st.warning("⚠️ El usuario y la contraseña no pueden estar vacíos.")
-                elif reg_user in usuarios_existentes:
-                    st.error("❌ Este usuario ya existe. Elige otro nombre.")
-                else:
-                    registrar_usuario(reg_user, reg_pass)
-                    st.success("✅ ¡Cuenta creada con éxito! Pasa a la pestaña de 'Iniciar Sesión'.")
-
-        with pestaña_login:
-            st.write("### Ingresa a tu panel")
-            login_user = st.text_input("Usuario:", key="login_user").lower().strip()
-            login_pass = st.text_input("Contraseña:", type="password", key="login_pass").strip()
-            
-            if st.button("Entrar Seguro 🚀", key="btn_login", use_container_width=True):
-                usuarios_existentes = cargar_usuarios()
-                if login_user in usuarios_existentes and usuarios_existentes[login_user] == login_pass:
-                    st.session_state.usuario_logeado = login_user
-                    st.rerun()
-                else:
-                    st.error("❌ Usuario o contraseña incorrectos.")
-
-# --- PANTALLA PRINCIPAL CON DISEÑO PREMIUM ---
+# --- DISEÑO VISUAL ADAPTATIVO (CSS DINÁMICO) ---
+if tema == "Modo Oscuro 🌙":
+    color_fondo = "#121212"
+    color_texto = "#e0e0e0"
+    color_tarjeta = "linear-gradient(135deg, #1f4068 0%, #162447 100%)"
+    color_item_historial = "#1b1b1b"
+    color_borde = "#333333"
 else:
-    user = st.session_state.usuario_logeado
+    color_fondo = "#f8f9fa"
+    color_texto = "#212529"
+    color_tarjeta = "linear-gradient(135deg, #1d3557 0%, #457b9d 100%)"
+    color_item_historial = "#ffffff"
+    color_borde = "#e9ecef"
 
-    ARCHIVO_SALDO = f"{user}_saldo.txt"
-    ARCHIVO_HISTORIAL = f"{user}_historial.txt"
-
-    def cargar_saldo():
-        if os.path.exists(ARCHIVO_SALDO):
-            with open(ARCHIVO_SALDO, "r") as archivo: return int(archivo.read())
-        return 0
-    def guardar_saldo(nuevo_saldo):
-        with open(ARCHIVO_SALDO, "w") as archivo: archivo.write(str(nuevo_saldo))
-    def guardar_movimiento(texto):
-        with open(ARCHIVO_HISTORIAL, "a") as archivo: archivo.write(texto + "\n")
-    def cargar_historial():
-        if os.path.exists(ARCHIVO_HISTORIAL):
-            with open(ARCHIVO_HISTORIAL, "r") as archivo: return archivo.readlines()
-        return []
-
-    if 'saldo' not in st.session_state:
-        st.session_state.saldo = cargar_saldo()
-
-    # --- MENÚ LATERAL (SIDEBAR) REORGANIZADO ---
-    with st.sidebar:
-        st.markdown(f"### 👤 Bienvenido,<br><h2 style='color:#1d3557; margin-top:0;'>{user.capitalize()}</h2>", unsafe_allow_html=True)
-        st.write("---")
-        
-        # El menú de navegación ahora está guardado elegantemente a la izquierda
-        st.markdown("#### 🎯 Menú de Navegación")
-        accion = st.radio(
-            "Selecciona una opción:", 
-            ["📊 Ver Mi Panel y Historial", "📈 Registrar Ingreso", "📉 Registrar Gasto"]
-        )
-        
-        st.write("---")
-        if st.button("🚪 Cerrar Sesión", use_container_width=True):
-            st.session_state.usuario_logeado = None
-            if 'saldo' in st.session_state: del st.session_state
+st.markdown(
+    f"""
+    <style>
+    #MainMenu {{visibility: hidden;}} footer {{visibility: hidden;}} header {{visibility: hidden;}} .stAppDeployButton {{display:none;}}
+    
+    /* Configuración del fondo total */
+    .stApp {{
+        background-color: {color_fondo} !important;
+        color: {color_texto} !important;
+    }}
+    
+    /* Textos globales adaptativos */
+    h1, h2, h3, h4, p, label, .stMarkdown {{
+        color: {color_texto} !important;
+    }}
+    
+    /* Tarjeta del Saldo Principal */
+    .tarjeta-saldo {{
+        background: {color_tarjeta};
+        color: white !important;
+        padding: 30px;
+        border-radius: 16px;
+        box-shadow: 0px 10px 25px rgba(0, 0, 0, 0.15);
+        text-align: center;
+        margin-bottom: 30px;
+        border: 1px solid rgba(255,255,255,0.1);
+    }}
+    .tarjeta-saldo h3 {{
+        margin: 0 !important;
+        font-size: 0.95rem !important;
+        letter-spacing: 1.5px;
+        opacity: 0.85;
+        color: #f1faee !important;
+    }}
+    .tarjeta-saldo h1 {{
+        margin: 10px 0 0 0 !important;
+        font-size: 2.6rem !important;
+        font-weight: 700 !important;
+        color: #ffffff !important;
+    }}
+    
+    /* Bloques del historial elegantes */
+    .item-historial {{
+        background-color: {color_item_historial};
