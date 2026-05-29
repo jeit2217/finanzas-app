@@ -25,6 +25,20 @@ st.markdown("""
     .factura-alerta { background-color: #644d14 !important; border-left: 6px solid #ffb703 !important; border-radius: 8px; padding: 10px; margin-bottom: 8px; }
     .factura-al-dia { background-color: #1b1b1b !important; border-left: 6px solid #2a9d8f !important; border-radius: 8px; padding: 10px; margin-bottom: 8px; }
 
+    /* Estilos para los CAJONES DE METAS */
+    .cajon-meta {
+        background-color: #1b1b1b;
+        border: 1px solid #2d2d2d;
+        border-radius: 12px;
+        padding: 15px;
+        margin-bottom: 15px;
+        text-align: center;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+    }
+    .cajon-meta h4 { margin: 0 0 8px 0 !important; color: #a29bfe !important; font-size: 1.1rem; font-weight: bold; }
+    .cajon-meta p { margin: 2px 0 !important; font-size: 0.85rem; opacity: 0.9; }
+    .cajon-meta .porcentaje { font-size: 1.2rem; font-weight: bold; color: #2a9d8f; margin: 5px 0 !important; }
+
     /* --- REGLAS ESPECÍFICAS PARA CELULARES (Pantallas menores a 768px) --- */
     @media (max-width: 768px) {
         .block-container { 
@@ -55,7 +69,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# Tarjetas visuales
+# Tarjetas visuales fijas
 st.markdown("<style>.tarjeta-saldo { background: linear-gradient(135deg, #1f4068 0%, #162447 100%); color: white !important; padding: 18px; border-radius: 14px; text-align: center; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.1);}</style>", unsafe_allow_html=True)
 st.markdown("<style>.tarjeta-saldo h3 {margin: 0 !important; font-size: 0.8rem !important; letter-spacing: 1px; opacity: 0.8; color: #f1faee !important;} .tarjeta-saldo h1 {margin: 4px 0 0 0 !important; font-size: 2rem !important; font-weight: 700 !important; color: #ffffff !important;}</style>", unsafe_allow_html=True)
 
@@ -67,7 +81,7 @@ st.markdown("<style>.tarjeta-banco p {margin: 0 !important; font-size: 0.7rem; o
 st.markdown("<style>.tarjeta-banco h4 {margin: 2px 0 0 0 !important; font-size: 1rem; font-weight: 700; color: #457b9d !important;}</style>", unsafe_allow_html=True)
 
 st.markdown("<style>.item-historial { background-color: #1b1b1b; padding: 12px; border-radius: 8px; margin-bottom: 8px; border-left: 5px solid #ccc; font-family: monospace; font-size: 0.85rem;}</style>", unsafe_allow_html=True)
-st.markdown("<style>.ingreso-style { border-left-color: #2a9d8f !important; } .gasto-style { border-left-color: #e63946 !important; } .deuda-style { border-left-color: #f4a261 !important; } .meta-style { border-left-color: #a29bfe !important; } .transferencia-style { border-left-color: #6c757d !important; }</style>", unsafe_allow_html=True)
+st.markdown("<style>.ingreso-style { border-left-color: #2a9d8f !important; } .gasto-style { border-left-color: #e63946 !important; } .meta-style { border-left-color: #a29bfe !important; } .transferencia-style { border-left-color: #6c757d !important; }</style>", unsafe_allow_html=True)
 
 # --- BASE DE DATOS ---
 ARCHIVO_USUARIOS = "usuarios_db.txt"
@@ -167,7 +181,7 @@ else:
     cols_html = "".join([f'<div class="tarjeta-banco"><p>{b}</p><h4>${saldos[b]:,}</h4></div>' for b in BANCOS])
     st.markdown(f'<div class="contenedor-bancos">{cols_html}</div>', unsafe_allow_html=True)
 
-    # --- MÓDULO DE TRATAMIENTO DE FECHAS ---
+    # --- MÓDULO DE FECHAS ---
     MESES_DICT = {"01": "Enero", "02": "Febrero", "03": "Marzo", "04": "Abril", "05": "Mayo", "06": "Junio", 
                   "07": "Julio", "08": "Agosto", "09": "Septiembre", "10": "Octubre", "11": "Noviembre", "12": "Diciembre"}
     hoy = datetime.now()
@@ -195,7 +209,7 @@ else:
         if lbl == mes_seleccionado: hist_filtrado.append(h)
 
     # --- NAVEGACIÓN EN TABS ---
-    tab_est, tab_hist, tab_mov, tab_fac, tab_met, tab_lim = st.tabs(["📈 Stats", "📊 Hist", "💸 Movs", "🧾 Recibos", "🎯 Metas", "📉 Topes"])
+    tab_est, tab_hist, tab_mov, tab_fac, tab_met, tab_lim = st.tabs(["📈 Stats", "📊 Hist", "💸 Movs", "🧾 Recibos", "🎯 Alcancías", "📉 Topes"])
 
     # --- SECCIÓN 1: ESTADÍSTICAS ---
     with tab_est:
@@ -217,11 +231,9 @@ else:
             monto_g = resumen_gastos[cat]
             tope_g = limites.get(cat, 0)
             col_a, col_b = st.columns([3, 1])
-            with col_a:
-                st.write(f"🔹 **{cat}:** ${monto_g:,}" + (f" / ${tope_g:,}" if tope_g > 0 else ""))
+            with col_a: st.write(f"🔹 **{cat}:** ${monto_g:,}" + (f" / ${tope_g:,}" if tope_g > 0 else ""))
             with col_b:
                 if total_gastado > 0 and monto_g > 0: st.write(f"({(monto_g/total_gastado)*100:.0f}%)")
-            
             if tope_g > 0:
                 porcentaje_uso = monto_g / tope_g
                 st.progress(min(porcentaje_uso, 1.0))
@@ -244,15 +256,6 @@ else:
                     st.markdown(f'<div class="item-historial transferencia-style">🔄 <b>[{f_formateada}] Transferencia:</b> ${h["monto"]:,} <br> 🏦 Desde {h["banco"]} hacia {h["cat"]}</div>', unsafe_allow_html=True)
                 else:
                     st.markdown(f'<div class="item-historial gasto-style">📉 <b>[{f_formateada}] Gasto ({h["banco"]}):</b> -${h["monto"]:,} <br> 📁 {h["cat"]} | {h["det"]}</div>', unsafe_allow_html=True)
-            st.write("---")
-            if st.button("🗑️ Resetear Todo de Raíz", use_container_width=True):
-                for b in BANCOS:
-                    if os.path.exists(f"{user}_s_{b.lower()}.txt"): os.remove(f"{user}_s_{b.lower()}.txt")
-                if os.path.exists(ARCH_HIST): os.remove(ARCH_HIST)
-                if os.path.exists(ARCH_METAS): os.remove(ARCH_METAS)
-                if os.path.exists(ARCH_LIMITES): os.remove(ARCH_LIMITES)
-                if os.path.exists(ARCH_FACTURAS): os.remove(ARCH_FACTURAS)
-                st.rerun()
 
     # --- SECCIÓN 3: MOVIMIENTOS ---
     with tab_mov:
@@ -296,133 +299,125 @@ else:
                         saldos[b_g] -= m_g; guardar_saldo(b_g, saldos[b_g])
                         hist.append({"tipo": "Gasto", "banco": b_g, "monto": m_g, "cat": cat_g, "det": det_g if det_g else f"Gasto en {cat_g}", "fecha": hoy_str})
                         guardar_datos("hist", hist); st.rerun()
-                    elif m_g > saldos[b_g]: st.error("Saldo insuficiente.")
 
-    # --- SECCIÓN 4: RECIBOS, FACTURAS Y SUSCRIPCIONES (CÍCLICO AUTOMÁTICO) ---
+        elif modo_actual == "meta":
+            if not metas: st.warning("Crea una meta primero.")
+            else:
+                st.write("### 🎯 Guardar para una Meta")
+                with st.form("form_meta", clear_on_submit=True):
+                    b_m = st.selectbox("¿Cuenta origen?", BANCOS)
+                    meta_dest = st.selectbox("¿Para cuál objetivo?", list(metas.keys()))
+                    txt_m_m = st.text_input("Monto a ahorrar:")
+                    if st.form_submit_button("Confirmar Ahorro 🚀", use_container_width=True):
+                        m_m = procesar_monto_texto(txt_m_m)
+                        if m_m > 0 and m_m <= saldos[b_m]:
+                            saldos[b_m] -= m_m; guardar_saldo(b_m, saldos[b_m])
+                            metas[meta_dest]['ahorrado'] += m_m
+                            guardar_datos("metas", metas)
+                            hist.append({"tipo": "Meta", "banco": b_m, "monto": m_m, "cat": "Ahorro", "det": meta_dest, "fecha": hoy_str})
+                            guardar_datos("hist", hist); st.rerun()
+
+        elif modo_actual == "trans":
+            st.write("### 🔄 Transferir Dinero")
+            with st.form("form_transferencia", clear_on_submit=True):
+                b_origen = st.selectbox("Desde cuenta:", BANCOS)
+                b_destino = st.selectbox("Hacia cuenta:", BANCOS)
+                txt_m_t = st.text_input("Monto:")
+                if st.form_submit_button("Confirmar 🔄", use_container_width=True):
+                    m_t = procesar_monto_texto(txt_m_t)
+                    if b_origen != b_destino and m_t > 0 and m_t <= saldos[b_origen]:
+                        saldos[b_origen] -= m_t; saldos[b_destino] += m_t
+                        guardar_saldo(b_origen, saldos[b_origen]); guardar_saldo(b_destino, saldos[b_destino])
+                        hist.append({"tipo": "Transferencia", "banco": b_origen, "monto": m_t, "cat": b_destino, "det": f"A {b_destino}", "fecha": hoy_str})
+                        guardar_datos("hist", hist); st.rerun()
+
+    # --- SECCIÓN 4: RECIBOS ---
     with tab_fac:
-        st.write("### 🧾 Control de Recibos y Suscripciones Fijas")
-        st.write("Registra tus gastos mensuales fijos. Al pagarlos, saltarán automáticamente al siguiente mes.")
-
+        st.write("### 🧾 Control de Recibos")
         with st.form("form_crear_factura", clear_on_submit=True):
-            nombre_f = st.text_input("Nombre del Servicio:", placeholder="Ej: Internet Claro, Netflix, Arriendo")
-            cat_f = st.selectbox("Categoría de Gasto:", CATEGORIAS, index=4) 
-            txt_m_f = st.text_input("Costo mensual (COP):")
-            
-            # Selector inteligente de fecha exacta para el primer vencimiento
-            st.write("📅 **Selecciona la fecha del próximo vencimiento:**")
-            fecha_vencimiento_inicial = st.date_input("Fecha límite:", value=hoy)
-            
-            if st.form_submit_button("Registrar Servicio 🧾", use_container_width=True):
+            nombre_f = st.text_input("Nombre del Servicio:")
+            cat_f = st.selectbox("Categoría:", CATEGORIAS, index=4) 
+            txt_m_f = st.text_input("Costo mensual:")
+            fecha_vencimiento_inicial = st.date_input("Próximo vencimiento:", value=hoy)
+            if st.form_submit_button("Registrar 🧾", use_container_width=True):
                 m_f = procesar_monto_texto(txt_m_f)
                 if nombre_f and m_f > 0:
-                    facturas[nombre_f] = {
-                        "monto": m_f, 
-                        "fecha_vencimiento": fecha_vencimiento_inicial.strftime("%Y-%m-%d"), 
-                        "cat": cat_f,
-                        "ultimo_pago": "Nunca"
-                    }
-                    guardar_datos("facturas", facturas)
-                    st.success(f"¡{nombre_f} programado con éxito!")
-                    st.rerun()
-                else: st.error("Completa todos los campos correctamente.")
+                    facturas[nombre_f] = {"monto": m_f, "fecha_vencimiento": fecha_vencimiento_inicial.strftime("%Y-%m-%d"), "cat": cat_f, "ultimo_pago": "Nunca"}
+                    guardar_datos("facturas", facturas); st.rerun()
 
-        st.write("---")
-        st.write("#### 📆 Estado de tus Pagos")
-        
-        if not facturas: st.info("No tienes facturas o suscripciones guardadas.")
-        else:
+        if facturas:
             for name, data in list(facturas.items()):
                 fecha_vence_obj = datetime.strptime(data["fecha_vencimiento"], "%Y-%m-%d")
                 monto_fac = data["monto"]
-                categoria_fac = data["cat"]
-                u_pago = data.get("ultimo_pago", "Nunca")
-
-                # Cálculo de días restantes absoluto utilizando objetos datetime reales
                 dias_restantes = (fecha_vence_obj.date() - hoy.date()).days
+                clase_css = "factura-vencida" if dias_restantes < 0 else ("factura-alerta" if dias_restantes <= 5 else "factura-al-dia")
                 
-                # Configurar colores y advertencias visuales
-                if dias_restantes < 0:
-                    clase_css = "factura-vencida"
-                    estado_texto = f"🚨 ¡VENCIDO! (Hace {-dias_restantes} días)"
-                elif 0 <= dias_restantes <= 5:
-                    clase_css = "factura-alerta"
-                    estado_texto = f"⚠️ Alerta: Vence en {dias_restantes} días"
-                else:
-                    clase_css = "factura-al-dia"
-                    estado_texto = f"✅ Al día (Vence en {dias_restantes} días)"
+                st.markdown(f'<div class="{clase_css}"><h4>{name}</h4><p>${monto_fac:,} COP | Vence: {fecha_vence_obj.strftime("%d/%m")}</p><p style="font-size:0.7rem;">Último: {data.get("ultimo_pago", "Nunca")}</p></div>', unsafe_allow_html=True)
+                banco_pago = st.selectbox("Pagar con:", BANCOS, key=f"b_{name}")
+                if st.button("PAGAR NOW 💸", key=f"p_{name}"):
+                    if saldos[banco_pago] >= monto_fac:
+                        saldos[banco_pago] -= monto_fac; guardar_saldo(banco_pago, saldos[banco_pago])
+                        hist.append({"tipo": "Gasto", "banco": banco_pago, "monto": monto_fac, "cat": data["cat"], "det": f"Factura: {name}", "fecha": hoy_str})
+                        guardar_datos("hist", hist)
+                        data["ultimo_pago"] = hoy.strftime("%d/%m/%Y")
+                        data["fecha_vencimiento"] = (fecha_vence_obj + timedelta(days=30)).strftime("%Y-%m-%d")
+                        guardar_datos("facturas", facturas); st.rerun()
 
-                # Mostrar tarjeta visual con la fecha del último pago incorporada
-                st.markdown(f"""
-                <div class="{clase_css}">
-                    <p style='margin:0; font-size:0.75rem; opacity:0.8;'>{estado_texto} | Vence el: {fecha_vence_obj.strftime('%d/%m/%Y')}</p>
-                    <h4 style='margin:2px 0; font-size:1.1rem;'>{name}</h4>
-                    <p style='margin:0; font-size:0.9rem; font-weight:bold;'>${monto_fac:,} COP</p>
-                    <p style='margin:4px 0 0 0; font-size:0.7rem; font-style: italic; opacity:0.7;'>⏮️ Último pago: {u_pago}</p>
-                </div>
-                """, unsafe_allow_html=True)
-                
-                col_p1, col_p2 = st.columns([2, 1])
-                with col_p1:
-                    banco_pago = st.selectbox(f"¿Con qué pagas {name}?", BANCOS, key=f"banco_{name}")
-                with col_p2:
-                    if st.button("PAGAR NOW 💸", key=f"pay_{name}", use_container_width=True):
-                        if saldos[banco_pago] >= monto_fac:
-                            # 1. Descontar dinero de la cuenta bancaria
-                            saldos[banco_pago] -= monto_fac
-                            guardar_saldo(banco_pago, saldos[banco_pago])
-                            
-                            # 2. Registrar el gasto en el historial general del mes
-                            hist.append({
-                                "tipo": "Gasto", 
-                                "banco": banco_pago, 
-                                "monto": monto_fac, 
-                                "cat": categoria_fac, 
-                                "det": f"Pago Factura: {name}", 
-                                "fecha": hoy_str
-                            })
-                            guardar_datos("hist", hist)
-                            
-                            # 3. LÓGICA CÍCLICA AUTOMÁTICA: Guardar última fecha y saltar al próximo mes
-                            fecha_actual_pago_lbl = hoy.strftime("%d de %B, %Y").replace("January", "Enero").replace("February", "Febrero").replace("March", "Marzo").replace("April", "Abril").replace("May", "Mayo").replace("June", "Junio").replace("July", "Julio").replace("August", "Agosto").replace("September", "Septiembre").replace("October", "Octubre").replace("November", "Noviembre").replace("December", "Diciembre")
-                            facturas[name]["ultimo_pago"] = fecha_actual_pago_lbl
-                            
-                            # Mover la fecha de vencimiento exactamente 1 mes hacia adelante de forma segura
-                            try:
-                                nueva_fecha_vence = fecha_vence_obj + timedelta(days=30)
-                            except:
-                                nueva_fecha_vence = fecha_vence_obj
-                            
-                            facturas[name]["fecha_vencimiento"] = nueva_fecha_vence.strftime("%Y-%m-%d")
-                            guardar_datos("facturas", facturas)
-                            
-                            st.success(f"¡{name} pagado! Próximo cobro: {nueva_fecha_vence.strftime('%d/%m/%Y')}")
-                            st.rerun()
-                        else:
-                            st.error("Saldo insuficiente en esa cuenta.")
-                
-                if st.button(f"🗑️ Eliminar Recibo: {name}", key=f"del_fac_{name}", use_container_width=True):
-                    del facturas[name]; guardar_datos("facturas", facturas); st.rerun()
-                st.write("---")
-
-    # --- SECCIÓN 5: METAS ---
+    # --- NUEVA SECCIÓN 5: METAS COMO CAJONES EN CUADRÍCULA ---
     with tab_met:
-        st.write("### 🎯 Metas de Ahorro")
-        with st.form("form_crear_meta", clear_on_submit=True):
-            nombre_m = st.text_input("¿Qué deseas lograr?").strip()
-            txt_total_m = st.text_input("Precio total estimado:")
-            if st.form_submit_button("Establecer Meta 🎯", use_container_width=True):
-                total_m = procesar_monto_texto(txt_total_m)
-                if nombre_m and total_m > 0:
-                    metas[nombre_m] = {"objetivo": total_m, "ahorrado": 0}
-                    guardar_datos("metas", metas); st.rerun()
+        st.write("### 🎯 Mis Alcancías de Ahorro")
+        
+        with st.expander("➕ Crear Nueva Alcancía / Meta"):
+            with st.form("form_crear_meta", clear_on_submit=True):
+                nombre_m = st.text_input("¿Qué deseas lograr? (Ej: Viaje, Celular)").strip()
+                txt_total_m = st.text_input("Precio total estimado (COP):")
+                if st.form_submit_button("Establecer Objetivo 🎯", use_container_width=True):
+                    total_m = procesar_monto_texto(txt_total_m)
+                    if nombre_m and total_m > 0:
+                        metas[nombre_m] = {"objetivo": total_m, "ahorrado": 0}
+                        guardar_datos("metas", metas)
+                        st.rerun()
 
-        if metas:
-            for m_nombre, m_datos in metas.items():
-                progreso = m_datos['ahorrado'] / m_datos['objetivo']
-                st.write(f"**{m_nombre}** (${m_datos['ahorrado']:,} de ${m_datos['objetivo']:,})")
-                st.progress(min(progreso, 1.0))
-                if st.button(f"Eliminar: {m_nombre}", key=f"del_{m_nombre}", use_container_width=True):
-                    del metas[m_nombre]; guardar_datos("metas", metas); st.rerun()
+        st.write("---")
+        
+        if not metas: 
+            st.info("No tienes alcancías creadas. Abre el menú de arriba para empezar a ahorrar.")
+        else:
+            # Creamos una cuadrícula dinámica usando columnas de Streamlit (3 cajones por fila en PC)
+            items_metas = list(metas.items())
+            
+            # Procesamos las metas en bloques de 3
+            for i in range(0, len(items_metas), 3):
+                bloque = items_metas[i:i+3]
+                columnas = st.columns(3)  # Genera 3 cajones en horizontal
+                
+                for idx, (m_nombre, m_datos) in enumerate(bloque):
+                    with columnas[idx]:
+                        # Cálculos matemáticos
+                        objetivo = m_datos['objetivo']
+                        ahorrado = m_datos['ahorrado']
+                        porcentaje = (ahorrado / objetivo) * 100 if objetivo > 0 else 0
+                        porcentaje = min(porcentaje, 100.0)
+                        
+                        # Renderizado del Cajón
+                        st.markdown(f"""
+                        <div class="cajon-meta">
+                            <h4>📦 {m_nombre}</h4>
+                            <p class="porcentaje">{porcentaje:.0f}%</p>
+                            <p><b>Ahorrado:</b><br>${ahorrado:,}</p>
+                            <p style="opacity: 0.6; font-size: 0.75rem;">Meta: ${objetivo:,}</p>
+                        </div>
+                        """, unsafe_allow_html=True)
+                        
+                        # Barra de progreso nativa dentro del cajón
+                        st.progress(porcentaje / 100)
+                        
+                        # Botón para borrar alcancía
+                        if st.button("🗑️ Romper", key=f"del_{m_nombre}", use_container_width=True):
+                            del metas[m_nombre]
+                            guardar_datos("metas", metas)
+                            st.rerun()
+                st.write("") # Separador entre filas de la cuadrícula
 
     # --- SECCIÓN 6: CONFIGURACIÓN DE TOPES/LÍMITES ---
     with tab_lim:
