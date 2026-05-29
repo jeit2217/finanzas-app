@@ -6,34 +6,72 @@ import pandas as pd
 # --- CONFIGURACIÓN ---
 st.set_page_config(page_title="Finanzas Pro Stats", page_icon="💰", layout="centered")
 
-# --- DISEÑO MÓVIL OPTIMIZADO (Sin modificar lógica anterior) ---
+# --- DISEÑO ULTRA-MÓVIL INTEGRADO (Sin alterar lógica) ---
 st.markdown("<style>#MainMenu {visibility: hidden;} footer {visibility: hidden;} header {visibility: hidden;}</style>", unsafe_allow_html=True)
 st.markdown("<style>.stApp { background-color: #121212 !important; color: #e0e0e0 !important; }</style>", unsafe_allow_html=True)
 
-# Ajustes de espaciado global para evitar márgenes gigantes en teléfonos
+# Compactación extrema de contenedores para pantallas móviles
 st.markdown("""
 <style>
-    .block-container { padding-top: 1rem !important; padding-bottom: 1rem !important; padding-left: 0.6rem !important; padding-right: 0.6rem !important; }
-    .stTabs [data-baseweb="tab-list"] { gap: 4px !important; }
-    .stTabs [data-baseweb="tab"] { padding-left: 8px !important; padding-right: 8px !important; font-size: 0.85rem !important; }
-    /* Optimización de botones para dedos (Mobile Touch) */
-    .stButton button { min-height: 42px !important; border-radius: 10px !important; }
+    /* Reducción de márgenes globales del contenedor */
+    .block-container { 
+        padding-top: 0.5rem !important; 
+        padding-bottom: 0.5rem !important; 
+        padding-left: 0.5rem !important; 
+        padding-right: 0.5rem !important; 
+    }
+    
+    /* Tabs nativos transformados en una barra de navegación móvil compacta */
+    .stTabs [data-baseweb="tab-list"] { 
+        gap: 2px !important; 
+        width: 100% !important;
+    }
+    .stTabs [data-baseweb="tab"] { 
+        padding-left: 6px !important; 
+        padding-right: 6px !important; 
+        padding-top: 10px !important;
+        padding-bottom: 10px !important;
+        font-size: 0.78rem !important; 
+        flex-grow: 1 !important;
+        text-align: center !important;
+    }
+    
+    /* Botones touch-friendly robustos */
+    .stButton button { 
+        min-height: 44px !important; 
+        border-radius: 12px !important; 
+        font-size: 0.9rem !important;
+    }
+    
+    /* Cuadrícula adaptativa inteligente para los botones del teclado exprés */
+    [data-testid="stHorizontalBlock"] {
+        display: grid !important;
+        grid-template-columns: repeat(3, 1fr) !important;
+        gap: 6px !important;
+    }
+    /* Excepción para que el botón "Borrar" ocupe toda la fila inferior en móvil */
+    [data-testid="stHorizontalBlock"] > div:last-child {
+        grid-column: span 3 !important;
+    }
+    
+    /* Quitar espacios vacíos que mete Streamlit entre componentes */
+    .element-container { margin-bottom: 0.4rem !important; }
 </style>
 """, unsafe_allow_html=True)
 
-# Estilo de tarjetas optimizadas para pantallas angostas
-st.markdown("<style>.tarjeta-saldo { background: linear-gradient(135deg, #1f4068 0%, #162447 100%); color: white !important; padding: 20px; border-radius: 16px; box-shadow: 0px 10px 25px rgba(0,0,0,0.15); text-align: center; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.1);}</style>", unsafe_allow_html=True)
-st.markdown("<style>.tarjeta-saldo h3 {margin: 0 !important; font-size: 0.85rem !important; letter-spacing: 1px; opacity: 0.85; color: #f1faee !important;} .tarjeta-saldo h1 {margin: 5px 0 0 0 !important; font-size: 2.1rem !important; font-weight: 700 !important; color: #ffffff !important;}</style>", unsafe_allow_html=True)
+# Estilo de tarjetas e historial optimizados
+st.markdown("<style>.tarjeta-saldo { background: linear-gradient(135deg, #1f4068 0%, #162447 100%); color: white !important; padding: 15px; border-radius: 14px; text-align: center; margin-bottom: 10px; border: 1px solid rgba(255,255,255,0.1);}</style>", unsafe_allow_html=True)
+st.markdown("<style>.tarjeta-saldo h3 {margin: 0 !important; font-size: 0.75rem !important; letter-spacing: 1px; opacity: 0.8; color: #f1faee !important;} .tarjeta-saldo h1 {margin: 3px 0 0 0 !important; font-size: 1.8rem !important; font-weight: 700 !important; color: #ffffff !important;}</style>", unsafe_allow_html=True)
 
-st.markdown("<style>.tarjeta-gastos { background: linear-gradient(135deg, #781d1d 0%, #4a0e0e 100%); color: white !important; padding: 18px; border-radius: 16px; box-shadow: 0px 10px 25px rgba(0,0,0,0.15); text-align: center; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.1);}</style>", unsafe_allow_html=True)
-st.markdown("<style>.tarjeta-gastos h3 {margin: 0 !important; font-size: 0.85rem !important; letter-spacing: 1px; opacity: 0.85; color: #f1faee !important;} .tarjeta-gastos h1 {margin: 5px 0 0 0 !important; font-size: 1.9rem !important; font-weight: 700 !important; color: #ffffff !important;}</style>", unsafe_allow_html=True)
+st.markdown("<style>.tarjeta-gastos { background: linear-gradient(135deg, #781d1d 0%, #4a0e0e 100%); color: white !important; padding: 15px; border-radius: 14px; text-align: center; margin-bottom: 10px; border: 1px solid rgba(255,255,255,0.1);}</style>", unsafe_allow_html=True)
+st.markdown("<style>.tarjeta-gastos h3 {margin: 0 !important; font-size: 0.75rem !important; letter-spacing: 1px; opacity: 0.8; color: #f1faee !important;} .tarjeta-gastos h1 {margin: 3px 0 0 0 !important; font-size: 1.6rem !important; font-weight: 700 !important; color: #ffffff !important;}</style>", unsafe_allow_html=True)
 
-st.markdown("<style>.contenedor-bancos {display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 20px;}</style>", unsafe_allow_html=True)
-st.markdown("<style>.tarjeta-banco {background-color: #1b1b1b; border: 1px solid #333; border-radius: 12px; padding: 10px; text-align: center; box-shadow: 0px 4px 10px rgba(0,0,0,0.15);}</style>", unsafe_allow_html=True)
-st.markdown("<style>.tarjeta-banco p {margin: 0 !important; font-size: 0.70rem; opacity: 0.7; text-transform: uppercase; font-weight: bold; letter-spacing: 0.5px;}</style>", unsafe_allow_html=True)
-st.markdown("<style>.tarjeta-banco h4 {margin: 3px 0 0 0 !important; font-size: 0.95rem; font-weight: 700; color: #457b9d !important;}</style>", unsafe_allow_html=True)
+st.markdown("<style>.contenedor-bancos {display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; margin-bottom: 10px;}</style>", unsafe_allow_html=True)
+st.markdown("<style>.tarjeta-banco {background-color: #1b1b1b; border: 1px solid #2d2d2d; border-radius: 10px; padding: 8px; text-align: center;}</style>", unsafe_allow_html=True)
+st.markdown("<style>.tarjeta-banco p {margin: 0 !important; font-size: 0.65rem; opacity: 0.6; text-transform: uppercase; font-weight: bold;}</style>", unsafe_allow_html=True)
+st.markdown("<style>.tarjeta-banco h4 {margin: 2px 0 0 0 !important; font-size: 0.9rem; font-weight: 700; color: #457b9d !important;}</style>", unsafe_allow_html=True)
 
-st.markdown("<style>.item-historial { background-color: #1b1b1b; padding: 12px 15px; border-radius: 10px; margin-bottom: 8px; border-left: 5px solid #ccc; font-family: monospace; font-size: 0.85rem; box-shadow: 0px 4px 6px rgba(0,0,0,0.1);}</style>", unsafe_allow_html=True)
+st.markdown("<style>.item-historial { background-color: #1b1b1b; padding: 10px 12px; border-radius: 8px; margin-bottom: 6px; border-left: 4px solid #ccc; font-family: monospace; font-size: 0.8rem;}</style>", unsafe_allow_html=True)
 st.markdown("<style>.ingreso-style { border-left-color: #2a9d8f !important; } .gasto-style { border-left-color: #e63946 !important; } .deuda-style { border-left-color: #f4a261 !important; } .pagada-style { border-left-color: #457b9d !important; } .meta-style { border-left-color: #a29bfe !important; } .transferencia-style { border-left-color: #6c757d !important; }</style>", unsafe_allow_html=True)
 
 # --- BASE DE DATOS ---
@@ -67,9 +105,9 @@ if 'val_express_mcrear' not in st.session_state: st.session_state.val_express_mc
 
 # --- LOGIN ---
 if st.session_state.usuario_logeado is None:
-    st.markdown("<div style='margin-top: 30px;'></div>", unsafe_allow_html=True)
-    st.markdown("<h1 style='text-align: center; font-weight: 800; font-size: 2rem;'>📱 Finanzas Pro</h1>", unsafe_allow_html=True)
-    t1, t2 = st.tabs(["🔑 Iniciar Sesión", "📝 Registrarse"])
+    st.markdown("<div style='margin-top: 20px;'></div>", unsafe_allow_html=True)
+    st.markdown("<h1 style='text-align: center; font-weight: 800; font-size: 1.8rem;'>📱 Finanzas Pro</h1>", unsafe_allow_html=True)
+    t1, t2 = st.tabs(["🔑 Login", "📝 Registro"])
     with t1:
         u_l = st.text_input("Usuario:").lower().strip()
         p_l = st.text_input("Clave:", type="password")
@@ -128,51 +166,45 @@ else:
     total_disponible = sum(saldos.values())
 
     # --- PANTALLA FIJA SUPERIOR ---
-    st.markdown(f'<div class="tarjeta-saldo"><h3>TOTAL GENERAL DISPONIBLE</h3><h1>${total_disponible:,} COP</h1></div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="tarjeta-saldo"><h3>DISPONIBLE</h3><h1>${total_disponible:,}</h1></div>', unsafe_allow_html=True)
     cols_html = "".join([f'<div class="tarjeta-banco"><p>{b}</p><h4>${saldos[b]:,}</h4></div>' for b in BANCOS])
     st.markdown(f'<div class="contenedor-bancos">{cols_html}</div>', unsafe_allow_html=True)
 
-    # --- 📱 MENÚ ---
-    st.markdown("<p style='margin-bottom:0px; font-size:0.85rem; opacity:0.7; font-weight:bold;'>📍 NAVEGACIÓN APLICACIÓN:</p>", unsafe_allow_html=True)
-    menu = st.selectbox(
-        "Selecciona una pestaña:",
-        ["📈 Estadísticas", "📊 Historial General", "💸 Registrar Movimientos", "📌 Control de Deudas", "🎯 Mis Metas"],
-        label_visibility="collapsed"
-    )
-    st.write("---")
+    # --- 📱 NAVEGACIÓN EN TABS (Súper limpio para celular) ---
+    tab_est, tab_hist, tab_mov, tab_deu, tab_met = st.tabs(["📈 Stats", "📊 Hist", "💸 Movs", "📌 Deudas", "🎯 Metas"])
 
     # --- SECCIÓN 1: ESTADÍSTICAS ---
-    if menu == "📈 Estadísticas":
-        st.subheader("Resumen Analítico")
+    with tab_est:
+        st.write("### Resumen Analítico")
         df = pd.DataFrame(hist)
         total_gastado = 0
         if not df.empty and "Gasto" in df['tipo'].values:
             total_gastado = int(df[df['tipo'] == "Gasto"]['monto'].sum())
-        st.markdown(f'<div class="tarjeta-gastos"><h3>GASTOS TOTALES ACUMULADOS</h3><h1>${total_gastado:,} COP</h1></div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="tarjeta-gastos"><h3>GASTOS ACUMULADOS</h3><h1>${total_gastado:,}</h1></div>', unsafe_allow_html=True)
         if total_gastado > 0:
             gastos_df = df[df['tipo'] == "Gasto"]
             resumen = gastos_df.groupby('cat')['monto'].sum()
             for cat, monto in resumen.items():
                 porcentaje = (monto / total_gastado) * 100
-                st.write(f"🔹 **{cat}:** ${int(monto):,} ({porcentaje:.1f}%)")
-        else: st.info("No registras gastos todavía.")
+                st.write(f"🔹 **{cat}:** ${int(monto):,} ({porcentaje:.0f}%)")
+        else: st.info("No hay gastos registrados.")
 
     # --- SECCIÓN 2: HISTORIAL COMPLETO ---
-    elif menu == "📊 Historial General":
-        st.subheader("Lista de Movimientos")
-        if len(hist) == 0: st.info("No hay transacciones.")
+    with tab_hist:
+        st.write("### Transacciones")
+        if len(hist) == 0: st.info("Historial vacío.")
         else:
             for h in reversed(hist):
                 if h['tipo'] == "Ingreso":
-                    st.markdown(f'<div class="item-historial ingreso-style">📈 <b>Ingreso ({h["banco"]}):</b> +${h["monto"]:,} <br> 📝 {h["det"]}</div>', unsafe_allow_html=True)
+                    st.markdown(f'<div class="item-historial ingreso-style"><b>+${h["monto"]:,}</b> ({h["banco"]})<br>{h["det"]}</div>', unsafe_allow_html=True)
                 elif h['tipo'] == "Meta":
-                    st.markdown(f'<div class="item-historial meta-style">🎯 <b>Ahorro Meta ({h["banco"]}):</b> -${h["monto"]:,} <br> 🚀 Para: {h["det"]}</div>', unsafe_allow_html=True)
+                    st.markdown(f'<div class="item-historial meta-style"><b>-${h["monto"]:,}</b> (Ahorro Meta)<br>🎯 {h["det"]} ({h["banco"]})</div>', unsafe_allow_html=True)
                 elif h['tipo'] == "Transferencia":
-                    st.markdown(f'<div class="item-historial transferencia-style">🔄 <b>Transferencia:</b> ${h["monto"]:,} <br> 🏦 Desde {h["banco"]} hacia {h["cat"]}</div>', unsafe_allow_html=True)
+                    st.markdown(f'<div class="item-historial transferencia-style"><b>🔄 ${h["monto"]:,}</b><br>{h["banco"]} ➡️ {h["cat"]}</div>', unsafe_allow_html=True)
                 else:
-                    st.markdown(f'<div class="item-historial gasto-style">📉 <b>Gasto ({h["banco"]}):</b> -${h["monto"]:,} <br> 📁 {h["cat"]} | {h["det"]}</div>', unsafe_allow_html=True)
+                    st.markdown(f'<div class="item-historial gasto-style"><b>-${h["monto"]:,}</b> ({h["banco"]})<br>📁 {h["cat"]} | {h["det"]}</div>', unsafe_allow_html=True)
             st.write("---")
-            if st.button("🗑️ Borrar Todo (Saldos y Movimientos)", use_container_width=True):
+            if st.button("🗑️ Resetear Datos y Cuentas", use_container_width=True):
                 for b in BANCOS:
                     if os.path.exists(f"{user}_s_{b.lower()}.txt"): os.remove(f"{user}_s_{b.lower()}.txt")
                 if os.path.exists(ARCH_HIST): os.remove(ARCH_HIST)
@@ -180,24 +212,24 @@ else:
                 st.rerun()
 
     # --- SECCIÓN 3: MOVIMIENTOS ---
-    elif menu == "💸 Registrar Movimientos":
+    with tab_mov:
         c1, c2, c3, c4 = st.columns(4)
         with c1:
-            if st.button("➕ Ing.", use_container_width=True): st.session_state.modo = "ing"
+            if st.button("➕ Ing", key="btn_m_ing", use_container_width=True): st.session_state.modo = "ing"
         with c2:
-            if st.button("➖ Gas.", use_container_width=True): st.session_state.modo = "gas"
+            if st.button("➖ Gas", key="btn_m_gas", use_container_width=True): st.session_state.modo = "gas"
         with c3:
-            if st.button("🎯 Aho.", use_container_width=True): st.session_state.modo = "meta"
+            if st.button("🎯 Aho", key="btn_m_met", use_container_width=True): st.session_state.modo = "meta"
         with c4:
-            if st.button("🔄 Tra.", use_container_width=True): st.session_state.modo = "trans"
+            if st.button("🔄 Tra", key="btn_m_tra", use_container_width=True): st.session_state.modo = "trans"
         
         modo_actual = st.session_state.get('modo', 'ing')
         st.write("---")
         
         if modo_actual == "ing":
-            st.markdown("### 📈 Añadir Fondos")
-            st.caption("⚡ Teclado Exprés (Toca para sumar):")
-            b1, b2, b3, b4, b5, b6, b_clr = st.columns([1,1,1,1,1,1,1.5])
+            st.write("### 📈 Añadir Fondos")
+            # Los sub-columnas ahora se ordenan de forma fluida en cuadrícula limpia en celular
+            b1, b2, b3, b4, b5, b6, b_clr = st.columns(7)
             with b1:
                 if st.button("+2k", key="i_2k"): st.session_state.val_express_ing += 2000
             with b2:
@@ -211,15 +243,13 @@ else:
             with b6:
                 if st.button("+100k", key="i_100k"): st.session_state.val_express_ing += 100000
             with b_clr:
-                if st.button("🧹 Borrar", key="i_clr"): st.session_state.val_express_ing = 0
+                if st.button("🧹 Limpiar Valor", key="i_clr"): st.session_state.val_express_ing = 0
 
             with st.form("form_ingreso", clear_on_submit=True):
-                b_i = st.selectbox("¿Cuenta?", BANCOS)
-                
+                b_i = st.selectbox("¿Cuenta de destino?", BANCOS)
                 val_inicial = f"{st.session_state.val_express_ing:,}" if st.session_state.val_express_ing > 0 else ""
-                txt_m_i = st.text_input("Monto en COP:", value=val_inicial, placeholder="Escribe o usa los botones exprés")
+                txt_m_i = st.text_input("Monto en COP:", value=val_inicial, placeholder="Monto final")
                 d_i = st.text_input("Detalle:")
-                
                 if st.form_submit_button("Guardar Ingreso 📈", use_container_width=True):
                     m_i = procesar_monto_texto(txt_m_i)
                     if m_i > 0:
@@ -232,9 +262,8 @@ else:
                     else: st.error("Monto inválido.")
         
         elif modo_actual == "gas":
-            st.markdown("### 📉 Registrar Gasto")
-            st.caption("⚡ Teclado Exprés (Toca para sumar):")
-            b1, b2, b3, b4, b5, b6, b_clr = st.columns([1,1,1,1,1,1,1.5])
+            st.write("### 📉 Registrar Gasto")
+            b1, b2, b3, b4, b5, b6, b_clr = st.columns(7)
             with b1:
                 if st.button("+2k", key="g_2k"): st.session_state.val_express_gas += 2000
             with b2:
@@ -248,16 +277,15 @@ else:
             with b6:
                 if st.button("+100k", key="g_100k"): st.session_state.val_express_gas += 100000
             with b_clr:
-                if st.button("🧹 Borrar", key="g_clr"): st.session_state.val_express_gas = 0
+                if st.button("🧹 Limpiar Valor", key="g_clr"): st.session_state.val_express_gas = 0
 
             with st.form("form_gasto", clear_on_submit=True):
-                b_g = st.selectbox("¿Cuenta?", BANCOS)
+                b_g = st.selectbox("¿De dónde sale el dinero?", BANCOS)
                 cat_g = st.selectbox("Categoría:", CATEGORIAS)
-                
                 val_inicial = f"{st.session_state.val_express_gas:,}" if st.session_state.val_express_gas > 0 else ""
-                txt_m_g = st.text_input("Monto en COP:", value=val_inicial, placeholder="Escribe o usa los botones exprés")
-                paga_d = st.checkbox("¿Paga deuda?")
-                id_d = st.text_input("ID Deuda (Si aplica):").upper().strip()
+                txt_m_g = st.text_input("Monto en COP:", value=val_inicial, placeholder="Monto final")
+                paga_d = st.checkbox("¿Paga alguna deuda?")
+                id_d = st.text_input("ID Deuda (Opcional):").upper().strip()
                 
                 if st.form_submit_button("Confirmar Gasto 📉", use_container_width=True):
                     m_g = procesar_monto_texto(txt_m_g)
@@ -270,7 +298,6 @@ else:
                                     deudas[id_d]['monto_pendiente'] = 0
                                     deudas[id_d]['estado'] = "pagada"
                                     deudas[id_d]['historial_pagos'].append("🎉 ¡Pagada!")
-                                deudas[id_d] = deudas[id_d]
                                 guardar_datos("deudas", deudas)
                             else: st.error("ID de deuda inválido."); st.stop()
                         saldos[b_g] -= m_g
@@ -284,11 +311,10 @@ else:
         
         elif modo_actual == "meta":
             if not metas:
-                st.warning("Primero crea una meta en la pestaña 🎯 Mis Metas")
+                st.warning("Crea una meta primero en la pestaña 🎯 Metas.")
             else:
-                st.markdown("### 🎯 Guardar para una Meta")
-                st.caption("⚡ Teclado Exprés (Toca para sumar):")
-                b1, b2, b3, b4, b5, b6, b_clr = st.columns([1,1,1,1,1,1,1.5])
+                st.write("### 🎯 Guardar para una Meta")
+                b1, b2, b3, b4, b5, b6, b_clr = st.columns(7)
                 with b1:
                     if st.button("+2k", key="m_2k"): st.session_state.val_express_met += 2000
                 with b2:
@@ -302,15 +328,13 @@ else:
                 with b6:
                     if st.button("+100k", key="m_100k"): st.session_state.val_express_met += 100000
                 with b_clr:
-                    if st.button("🧹 Borrar", key="m_clr"): st.session_state.val_express_met = 0
+                    if st.button("🧹 Limpiar Valor", key="m_clr"): st.session_state.val_express_met = 0
 
                 with st.form("form_meta", clear_on_submit=True):
-                    b_m = st.selectbox("¿De qué cuenta sale el ahorro?", BANCOS)
-                    meta_dest = st.selectbox("¿Para qué meta es?", list(metas.keys()))
-                    
+                    b_m = st.selectbox("¿Cuenta origen?", BANCOS)
+                    meta_dest = st.selectbox("¿Para cuál objetivo?", list(metas.keys()))
                     val_inicial = f"{st.session_state.val_express_met:,}" if st.session_state.val_express_met > 0 else ""
-                    txt_m_m = st.text_input("Monto a ahorrar:", value=val_inicial, placeholder="Escribe o usa los botones exprés")
-                    
+                    txt_m_m = st.text_input("Monto a ahorrar:", value=val_inicial, placeholder="Monto final")
                     if st.form_submit_button("Confirmar Ahorro 🚀", use_container_width=True):
                         m_m = procesar_monto_texto(txt_m_m)
                         if m_m > 0 and m_m <= saldos[b_m]:
@@ -326,9 +350,8 @@ else:
                         else: st.error("Monto inválido.")
 
         elif modo_actual == "trans":
-            st.markdown("### 🔄 Transferir entre Cuentas")
-            st.caption("⚡ Teclado Exprés (Toca para sumar):")
-            b1, b2, b3, b4, b5, b6, b_clr = st.columns([1,1,1,1,1,1,1.5])
+            st.write("### 🔄 Transferir Dinero")
+            b1, b2, b3, b4, b5, b6, b_clr = st.columns(7)
             with b1:
                 if st.button("+2k", key="t_2k"): st.session_state.val_express_tra += 2000
             with b2:
@@ -342,36 +365,32 @@ else:
             with b6:
                 if st.button("+100k", key="t_100k"): st.session_state.val_express_tra += 100000
             with b_clr:
-                if st.button("🧹 Borrar", key="t_clr"): st.session_state.val_express_tra = 0
+                if st.button("🧹 Limpiar Valor", key="t_clr"): st.session_state.val_express_tra = 0
 
             with st.form("form_transferencia", clear_on_submit=True):
-                b_origen = st.selectbox("¿De qué cuenta sale la plata?", BANCOS, key="origen")
-                b_destino = st.selectbox("¿A qué cuenta entra la plata?", BANCOS, key="destino")
-                
+                b_origen = st.selectbox("Desde cuenta:", BANCOS, key="origen")
+                b_destino = st.selectbox("Hacia cuenta:", BANCOS, key="destino")
                 val_inicial = f"{st.session_state.val_express_tra:,}" if st.session_state.val_express_tra > 0 else ""
-                txt_m_t = st.text_input("Monto a transferir:", value=val_inicial, placeholder="Escribe o usa los botones exprés")
-                
+                txt_m_t = st.text_input("Monto total:", value=val_inicial, placeholder="Monto final")
                 if st.form_submit_button("Confirmar Transferencia 🔄", use_container_width=True):
                     m_t = procesar_monto_texto(txt_m_t)
-                    if b_origen == b_destino:
-                        st.error("La cuenta de origen y destino no pueden ser la misma.")
+                    if b_origen == b_destino: st.error("Las cuentas deben ser diferentes.")
                     elif m_t > 0 and m_t <= saldos[b_origen]:
                         saldos[b_origen] -= m_t
                         saldos[b_destino] += m_t
                         guardar_saldo(b_origen, saldos[b_origen])
                         guardar_saldo(b_destino, saldos[b_destino])
-                        hist.append({"tipo": "Transferencia", "banco": b_origen, "monto": m_t, "cat": b_destino, "det": f"Transferencia de {b_origen} a {b_destino}"})
+                        hist.append({"tipo": "Transferencia", "banco": b_origen, "monto": m_t, "cat": b_destino, "det": f"Mover de {b_origen} a {b_destino}"})
                         guardar_datos("hist", hist)
                         st.session_state.val_express_tra = 0
                         st.rerun()
-                    elif m_t > saldos[b_origen]: st.error(f"Saldo insuficiente en {b_origen}.")
+                    elif m_t > saldos[b_origen]: st.error("Saldo insuficiente.")
                     else: st.error("Monto inválido.")
 
-    # --- SECCIÓN 4: DEUDAS ---
-    elif menu == "📌 Control de Deudas":
-        st.subheader("Gestión de Deudas")
-        st.caption("⚡ Teclado Exprés (Toca para sumar):")
-        b1, b2, b3, b4, b5, b6, b_clr = st.columns([1,1,1,1,1,1,1.5])
+# --- SECCIÓN 4: DEUDAS ---
+    with tab_deu:
+        st.write("### 📌 Registro de Deudas")
+        b1, b2, b3, b4, b5, b6, b_clr = st.columns(7)
         with b1:
             if st.button("+2k", key="d_2k"): st.session_state.val_express_deu += 2000
         with b2:
@@ -385,54 +404,46 @@ else:
         with b6:
             if st.button("+100k", key="d_100k"): st.session_state.val_express_deu += 100000
         with b_clr:
-            if st.button("🧹 Borrar", key="d_clr"): st.session_state.val_express_deu = 0
+            if st.button("🧹 Limpiar Valor", key="d_clr"): st.session_state.val_express_deu = 0
 
         with st.form("form_crear_deuda", clear_on_submit=True):
-            id_n = st.text_input("ID Único Deuda:", placeholder="EJ: JUAN1").upper().strip()
-            concepto_n = st.text_input("Concepto o Razón:")
-            
+            id_n = st.text_input("ID de cobro:", placeholder="Ejem: PEDRO1").upper().strip()
+            concepto_n = st.text_input("¿Qué te prestaron?")
             val_inicial = f"{st.session_state.val_express_deu:,}" if st.session_state.val_express_deu > 0 else ""
-            txt_m_n = st.text_input("Monto Inicial:", value=val_inicial, placeholder="Escribe o usa los botones exprés")
-            
+            txt_m_n = st.text_input("Saldo Inicial:", value=val_inicial, placeholder="Monto final")
             if st.form_submit_button("Crear Deuda 📌", use_container_width=True):
                 m_n = procesar_monto_texto(txt_m_n)
                 if id_n and m_n > 0 and concepto_n:
-                    if id_n in deudas: st.error("ID ya existe.")
+                    if id_n in deudas: st.error("Ese ID ya existe.")
                     else:
                         deudas[id_n] = {"concepto": concepto_n, "monto_inicial": m_n, "monto_pendiente": m_n, "estado": "activa", "historial_pagos": [f"Creada por ${m_n:,}"]}
                         guardar_datos("deudas", deudas)
                         st.session_state.val_express_deu = 0
                         st.session_state["deuda_creada_ok"] = True
-                else: st.error("Por favor completa los datos con un monto válido.")
-        
+                else: st.error("Completa todos los campos.")
         if st.session_state.pop("deuda_creada_ok", False): st.rerun()
 
-        st.write("---")
         d_act = {k: v for k, v in deudas.items() if v.get('estado', 'activa') == "activa"}
         d_pag = {k: v for k, v in deudas.items() if v.get('estado', 'activa') == "pagada"}
         
-        st.markdown("### 📋 Pendientes")
+        st.write("#### 📋 Cuentas Pendientes")
         for k, v in d_act.items():
-            with st.expander(f"🔴 {k} | Pendiente: ${v['monto_pendiente']:,}"):
+            with st.expander(f"🔴 {k} | Debe: ${v['monto_pendiente']:,}"):
                 st.write(f"**Concepto:** {v['concepto']}"); [st.write(f"• {p}") for p in v['historial_pagos']]
         
-        st.write("---")
-        st.markdown("### ✅ Pagadas")
+        st.write("#### ✅ Pagadas")
         for k, v in d_pag.items():
-            with st.expander(f"🟢 [PAGADA] {k}"):
+            with st.expander(f"🟢 {k} [Cerrada]"):
                 st.write(f"**Concepto:** {v['concepto']}"); [st.write(f"• {p}") for p in v['historial_pagos']]
 
         st.write("---")
-        if st.button("🗑️ Limpiar Historial de Deudas", use_container_width=True):
+        if st.button("🗑️ Borrar Registro de Deudas", use_container_width=True):
             if os.path.exists(ARCH_DEUDAS): os.remove(ARCH_DEUDAS); st.rerun()
 
-    # --- SECCIÓN 5: METAS ---
-    elif menu == "🎯 Mis Metas":
-        st.subheader("🎯 Objetivos de Ahorro")
-        
-        st.markdown("##### ✨ Crear Nueva Meta")
-        st.caption("⚡ Teclado Exprés (Toca para sumar):")
-        b1, b2, b3, b4, b5, b6, b_clr = st.columns([1,1,1,1,1,1,1.5])
+# --- SECCIÓN 5: METAS ---
+    with tab_met:
+        st.write("### 🎯 Metas de Ahorro")
+        b1, b2, b3, b4, b5, b6, b_clr = st.columns(7)
         with b1:
             if st.button("+2k", key="mc_2k"): st.session_state.val_express_mcrear += 2000
         with b2:
@@ -446,14 +457,12 @@ else:
         with b6:
             if st.button("+100k", key="mc_100k"): st.session_state.val_express_mcrear += 100000
         with b_clr:
-            if st.button("🧹 Borrar", key="mc_clr"): st.session_state.val_express_mcrear = 0
+            if st.button("🧹 Limpiar Valor", key="mc_clr"): st.session_state.val_express_mcrear = 0
 
         with st.form("form_crear_meta", clear_on_submit=True):
-            nombre_m = st.text_input("¿Qué quieres comprar?", placeholder="Ej: PlayStation 6").strip()
-            
+            nombre_m = st.text_input("¿Qué deseas lograr?", placeholder="Ej: Viaje").strip()
             val_inicial = f"{st.session_state.val_express_mcrear:,}" if st.session_state.val_express_mcrear > 0 else ""
-            txt_total_m = st.text_input("¿Cuánto cuesta?:", value=val_inicial)
-            
+            txt_total_m = st.text_input("Precio total estimado:", value=val_inicial)
             if st.form_submit_button("Establecer Meta 🎯", use_container_width=True):
                 total_m = procesar_monto_texto(txt_total_m)
                 if nombre_m and total_m > 0:
@@ -461,36 +470,28 @@ else:
                     guardar_datos("metas", metas)
                     st.session_state.val_express_mcrear = 0
                     st.session_state["meta_creada_ok"] = True
-                else: st.error("Verifica los datos ingresados.")
-        
+                else: st.error("Verifica los campos.")
         if st.session_state.pop("meta_creada_ok", False): st.rerun()
 
         st.write("---")
-        if not metas: st.info("Aún no tienes metas creadas.")
+        if not metas: st.info("Sin objetivos activos.")
         else:
             for m_nombre, m_datos in metas.items():
                 progreso = m_datos['ahorrado'] / m_datos['objetivo']
                 progreso = min(progreso, 1.0)
-                
-                st.markdown(f"#### {m_nombre}")
-                st.write(f"💰 ${m_datos['ahorrado']:,} de ${m_datos['objetivo']:,} COP")
+                st.write(f"**{m_nombre}** (${m_datos['ahorrado']:,} de ${m_datos['objetivo']:,})")
                 st.progress(progreso)
-                
-                if progreso >= 1.0:
-                    st.balloons()
-                    st.success("¡META ALCANZADA! 🥳")
-                
-                if st.button(f"Eliminar Meta: {m_nombre}", key=f"del_{m_nombre}", use_container_width=True):
-                    del metas[m_nombre]
-                    guardar_datos("metas", metas)
-                    st.rerun()
+                if progreso >= 1.0: 
+                    st.balloons(); st.success("¡Completado! 🥳")
+                if st.button(f"Eliminar: {m_nombre}", key=f"del_{m_nombre}", use_container_width=True):
+                    del metas[m_nombre]; guardar_datos("metas", metas); st.rerun()
 
         st.write("---")
-        if st.button("🗑️ Resetear todas las Metas", use_container_width=True):
+        if st.button("🗑️ Resetear Metas Completas", use_container_width=True):
             if os.path.exists(ARCH_METAS): os.remove(ARCH_METAS); st.rerun()
 
     # --- BOTÓN DE SALIDA ---
     st.write("---")
-    if st.button("🚪 Salir de la Cuenta", use_container_width=True):
+    if st.button("🚪 Cerrar Sesión", use_container_width=True):
         st.session_state.usuario_logeado = None
         st.rerun()
