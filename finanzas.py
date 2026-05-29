@@ -93,8 +93,8 @@ else:
         with open(ARCHIVO_SALDO, "w") as archivo:
             archivo.write(str(nuevo_saldo))
 
-    def guardar_movimiento(texto):
-        with open(ARCHIVO_HISTORIAL, "a") as archivo:
-            archivo.write(texto + "\n")
+def guardar_movimiento(texto):
+    with open(ARCHIVO_HISTORIAL, "a") as archivo:
+        archivo.write(texto + "\n")
 
     def cargar_historial():
