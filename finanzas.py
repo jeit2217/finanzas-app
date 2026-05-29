@@ -13,8 +13,14 @@ with st.sidebar:
     tema = st.radio("Elige el estilo visual:", ["Modo Claro ☀️", "Modo Oscuro 🌙"], label_visibility="collapsed")
     st.write("---")
 
-# --- DISEÑO VISUAL BASE (LÍNEAS CORTAS SEPARADAS PARA EVITAR ERRORES) ---
+# --- DISEÑO VISUAL BASE (BLOQUEO DE SIDEBAR PARA QUE NO SE OCULTE) ---
 st.markdown("<style>#MainMenu {visibility: hidden;} footer {visibility: hidden;} header {visibility: hidden;} .stAppDeployButton {display:none;}</style>", unsafe_allow_html=True)
+# Ocultar el botón nativo de abrir/cerrar del sidebar (la flechita)
+st.markdown("<style>[data-testid='stSidebarCollapseButton'] {display: none !important;}</style>", unsafe_allow_html=True)
+# Forzar a que el contenedor del sidebar esté siempre expandido y visible
+st.markdown("<style>[data-testid='stSidebar'] {class: fixed !important; visibility: visible !important; transform: none !important;}</style>", unsafe_allow_html=True)
+
+# --- ESTILOS DE TARJETAS E HISTORIAL ---
 st.markdown("<style>.tarjeta-saldo {color: white !important; padding: 30px; border-radius: 16px; box-shadow: 0px 10px 25px rgba(0,0,0,0.15); text-align: center; margin-bottom: 30px; border: 1px solid rgba(255,255,255,0.1);}</style>", unsafe_allow_html=True)
 st.markdown("<style>.tarjeta-saldo h3 {margin: 0 !important; font-size: 0.95rem !important; letter-spacing: 1.5px; opacity: 0.85; color: #f1faee !important;}</style>", unsafe_allow_html=True)
 st.markdown("<style>.tarjeta-saldo h1 {margin: 10px 0 0 0 !important; font-size: 2.6rem !important; font-weight: 700 !important; color: #ffffff !important;}</style>", unsafe_allow_html=True)
@@ -166,7 +172,6 @@ else:
     elif accion == "📈 Registrar Ingreso":
         st.markdown("### 📈 Añadir Fondos")
         
-        # --- NUEVOS CAMPOS PARA INGRESO DETALLADO ---
         monto_ingreso = st.number_input("Monto en pesos (COP):", min_value=0, step=1000, value=0)
         detalle_ingreso = st.text_input("¿De qué es este ingreso? (Ej: Sueldo, Venta, Regalo):", placeholder="Escribe el detalle aquí...").strip()
         
@@ -177,8 +182,6 @@ else:
                     
                 st.session_state.saldo += monto_ingreso
                 guardar_saldo(st.session_state.saldo)
-                
-                # Guardamos el movimiento con la descripción del ingreso
                 guardar_movimiento(f"📈 Ingreso: +${monto_ingreso:,} COP ({detalle_ingreso})")
                 st.success(f"✅ ¡Se han sumado ${monto_ingreso:,} COP por '{detalle_ingreso}'!")
                 st.rerun()
