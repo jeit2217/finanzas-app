@@ -23,7 +23,7 @@ st.markdown("<style>.tarjeta-banco p {margin: 0 !important; font-size: 0.70rem; 
 st.markdown("<style>.tarjeta-banco h4 {margin: 3px 0 0 0 !important; font-size: 0.95rem; font-weight: 700; color: #457b9d !important;}</style>", unsafe_allow_html=True)
 
 st.markdown("<style>.item-historial { background-color: #1b1b1b; padding: 12px 15px; border-radius: 10px; margin-bottom: 8px; border-left: 5px solid #ccc; font-family: monospace; font-size: 0.85rem; box-shadow: 0px 4px 6px rgba(0,0,0,0.1);}</style>", unsafe_allow_html=True)
-st.markdown("<style>.ingreso-style { border-left-color: #2a9d8f !important; } .gasto-style { border-left-color: #e63946 !important; } .deuda-style { border-left-color: #f4a261 !important; } .pagada-style { border-left-color: #457b9d !important; } .meta-style { border-left-color: #a29bfe !important; }</style>", unsafe_allow_html=True)
+st.markdown("<style>.ingreso-style { border-left-color: #2a9d8f !important; } .gasto-style { border-left-color: #e63946 !important; } .deuda-style { border-left-color: #f4a261 !important; } .pagada-style { border-left-color: #457b9d !important; } .meta-style { border-left-color: #a29bfe !important; } .transferencia-style { border-left-color: #6c757d !important; }</style>", unsafe_allow_html=True)
 
 # --- BASE DE DATOS ---
 ARCHIVO_USUARIOS = "usuarios_db.txt"
@@ -149,6 +149,8 @@ else:
                     st.markdown(f'<div class="item-historial ingreso-style">📈 <b>Ingreso ({h["banco"]}):</b> +${h["monto"]:,} <br> 📝 {h["det"]}</div>', unsafe_allow_html=True)
                 elif h['tipo'] == "Meta":
                     st.markdown(f'<div class="item-historial meta-style">🎯 <b>Ahorro Meta ({h["banco"]}):</b> -${h["monto"]:,} <br> 🚀 Para: {h["det"]}</div>', unsafe_allow_html=True)
+                elif h['tipo'] == "Transferencia":
+                    st.markdown(f'<div class="item-historial transferencia-style">🔄 <b>Transferencia:</b> ${h["monto"]:,} <br> 🏦 Desde {h["banco"]} hacia {h["cat"]}</div>', unsafe_allow_html=True)
                 else:
                     st.markdown(f'<div class="item-historial gasto-style">📉 <b>Gasto ({h["banco"]}):</b> -${h["monto"]:,} <br> 📁 {h["cat"]} | {h["det"]}</div>', unsafe_allow_html=True)
             st.write("---")
@@ -159,15 +161,17 @@ else:
                 if os.path.exists(ARCH_METAS): os.remove(ARCH_METAS)
                 st.rerun()
 
-    # --- SECCIÓN 3: MOVIMIENTOS (CON CAPTURA AUTOMÁTICA EN UN CLICK) ---
+    # --- SECCIÓN 3: MOVIMIENTOS ---
     elif menu == "💸 Registrar Movimientos":
-        c1, c2, c3 = st.columns(3)
+        c1, c2, c3, c4 = st.columns(4)
         with c1:
-            if st.button("➕ Ingreso", use_container_width=True): st.session_state.modo = "ing"
+            if st.button("➕ Ing.", use_container_width=True): st.session_state.modo = "ing"
         with c2:
-            if st.button("➖ Gasto", use_container_width=True): st.session_state.modo = "gas"
+            if st.button("➖ Gas.", use_container_width=True): st.session_state.modo = "gas"
         with c3:
-            if st.button("🎯 Ahorro", use_container_width=True): st.session_state.modo = "meta"
+            if st.button("🎯 Aho.", use_container_width=True): st.session_state.modo = "meta"
+        with c4:
+            if st.button("🔄 Tra.", use_container_width=True): st.session_state.modo = "trans"
         
         modo_actual = st.session_state.get('modo', 'ing')
         st.write("---")
@@ -241,6 +245,36 @@ else:
                             st.rerun()
                         elif m_m > saldos[b_m]: st.error("Saldo insuficiente.")
                         else: st.error("Monto inválido.")
+
+        # --- NUEVO MODO: TRANSFERENCIAS ---
+        elif modo_actual == "trans":
+            with st.form("form_transferencia", clear_on_submit=True):
+                st.markdown("### 🔄 Transferir entre Cuentas")
+                b_origen = st.selectbox("¿De qué cuenta sale la plata?", BANCOS, key="origen")
+                b_destino = st.selectbox("¿A qué cuenta entra la plata?", BANCOS, key="destino")
+                txt_m_t = st.text_input("Monto a transferir (Ej: 50.000 o 50000):")
+                
+                if st.form_submit_button("Confirmar Transferencia 🔄", use_container_width=True):
+                    m_t = procesar_monto_texto(txt_m_t)
+                    if b_origen == b_destino:
+                        st.error("La cuenta de origen y destino no pueden ser la misma.")
+                    elif m_t > 0 and m_t <= saldos[b_origen]:
+                        # Ejecutar transferencia matemática
+                        saldos[b_origen] -= m_t
+                        saldos[b_destino] += m_t
+                        
+                        # Guardar saldos modificados
+                        guardar_saldo(b_origen, saldos[b_origen])
+                        guardar_saldo(b_destino, saldos[b_destino])
+                        
+                        # Registrar en historial (usamos 'cat' para almacenar el banco destino sin romper la estructura de la base de datos)
+                        hist.append({"tipo": "Transferencia", "banco": b_origen, "monto": m_t, "cat": b_destino, "det": f"Transferencia de {b_origen} a {b_destino}"})
+                        guardar_datos("hist", hist)
+                        st.rerun()
+                    elif m_t > saldos[b_origen]: 
+                        st.error(f"Saldo insuficiente en {b_origen}.")
+                    else: 
+                        st.error("Monto inválido.")
 
     # --- SECCIÓN 4: DEUDAS ---
     elif menu == "📌 Control de Deudas":
