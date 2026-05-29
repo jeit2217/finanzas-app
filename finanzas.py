@@ -1,7 +1,7 @@
 import streamlit as st
 import os
 import json
-import pandas as pd # Para manejar los datos del gráfico
+import pandas as pd  # Para manejar los datos del gráfico
 
 # --- CONFIGURACIÓN ---
 st.set_page_config(page_title="Finanzas Pro Stats", page_icon="📈", layout="centered")
@@ -54,7 +54,7 @@ else:
     CATEGORIAS = ["Comida", "Transporte", "Rumba", "Deudas", "Hogar", "Otros"]
     
     # Archivos
-    ARCH_HIST = f"{user}_hist.json" # Cambiamos a JSON para leer categorías fácil
+    ARCH_HIST = f"{user}_hist.json"
     ARCH_DEUDAS = f"{user}_deudas.json"
 
     def cargar_datos(tipo):
@@ -90,7 +90,7 @@ else:
     # PESTAÑAS
     p_stats, p_mov, p_deu = st.tabs(["📈 Estadísticas", "💸 Movimientos", "📌 Deudas"])
 
-    # --- PESTAÑA ESTADÍSTICAS (LO NUEVO) ---
+    # --- PESTAÑA ESTADÍSTICAS ---
     with p_stats:
         st.subheader("Análisis de Gastos")
         df = pd.DataFrame(hist)
@@ -99,18 +99,19 @@ else:
             # Filtrar solo gastos
             gastos_df = df[df['tipo'] == "Gasto"]
             
-            # Gráfico de Torta
-            resumen = gastos_df.groupby('cat')['monto'].sum().reset_index()
-            st.write("¿En qué se va tu dinero?")
-            st.plotly_chart({
-                "data": [{"values": resumen['monto'], "labels": resumen['cat'], "type": "pie", "hole": .4, "marker": {"colors": ["#1f4068", "#1b1b1b", "#457b9d", "#e63946", "#2a9d8f"]}}],
-                "layout": {"paper_bgcolor": "rgba(0,0,0,0)", "plot_bgcolor": "rgba(0,0,0,0)", "font": {"color": "white"}, "showlegend": True}
-            }, use_container_width=True)
+            # Agrupar por categoría
+            resumen = gastos_df.groupby('cat')['monto'].sum()
             
-            # Tabla de totales
-            for _, fila in resumen.iterrows():
-                porcentaje = (fila['monto'] / resumen['monto'].sum()) * 100
-                st.write(f"**{fila['cat']}:** ${int(fila['monto']):,} ({porcentaje:.1f}%)")
+            st.write("¿En qué se va tu dinero?")
+            # Gráfico de barras nativo de Streamlit (No requiere Plotly)
+            st.bar_chart(resumen)
+            
+            st.write("---")
+            # Tabla de totales con porcentajes
+            total_gastos = resumen.sum()
+            for cat, monto in resumen.items():
+                porcentaje = (monto / total_gastos) * 100
+                st.write(f"**{cat}:** ${int(monto):,} ({porcentaje:.1f}%)")
         else:
             st.info("Aún no hay gastos registrados para analizar.")
 
