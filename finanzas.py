@@ -6,23 +6,23 @@ import pandas as pd
 # --- CONFIGURACIÓN ---
 st.set_page_config(page_title="Finanzas Pro Stats", page_icon="💰", layout="centered")
 
-# --- DISEÑO ---
+# --- DISEÑO MÓVIL ---
 st.markdown("<style>#MainMenu {visibility: hidden;} footer {visibility: hidden;} header {visibility: hidden;}</style>", unsafe_allow_html=True)
 st.markdown("<style>.stApp { background-color: #121212 !important; color: #e0e0e0 !important; }</style>", unsafe_allow_html=True)
 
-# Estilo de tarjetas
-st.markdown("<style>.tarjeta-saldo { background: linear-gradient(135deg, #1f4068 0%, #162447 100%); color: white !important; padding: 25px; border-radius: 16px; box-shadow: 0px 10px 25px rgba(0,0,0,0.15); text-align: center; margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.1);}</style>", unsafe_allow_html=True)
-st.markdown("<style>.tarjeta-saldo h3 {margin: 0 !important; font-size: 0.90rem !important; letter-spacing: 1.5px; opacity: 0.85; color: #f1faee !important;} .tarjeta-saldo h1 {margin: 8px 0 0 0 !important; font-size: 2.4rem !important; font-weight: 700 !important; color: #ffffff !important;}</style>", unsafe_allow_html=True)
+# Estilo de tarjetas optimizadas para pantallas angostas
+st.markdown("<style>.tarjeta-saldo { background: linear-gradient(135deg, #1f4068 0%, #162447 100%); color: white !important; padding: 20px; border-radius: 16px; box-shadow: 0px 10px 25px rgba(0,0,0,0.15); text-align: center; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.1);}</style>", unsafe_allow_html=True)
+st.markdown("<style>.tarjeta-saldo h3 {margin: 0 !important; font-size: 0.85rem !important; letter-spacing: 1px; opacity: 0.85; color: #f1faee !important;} .tarjeta-saldo h1 {margin: 5px 0 0 0 !important; font-size: 2.1rem !important; font-weight: 700 !important; color: #ffffff !important;}</style>", unsafe_allow_html=True)
 
-st.markdown("<style>.tarjeta-gastos { background: linear-gradient(135deg, #781d1d 0%, #4a0e0e 100%); color: white !important; padding: 20px; border-radius: 16px; box-shadow: 0px 10px 25px rgba(0,0,0,0.15); text-align: center; margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.1);}</style>", unsafe_allow_html=True)
-st.markdown("<style>.tarjeta-gastos h3 {margin: 0 !important; font-size: 0.90rem !important; letter-spacing: 1.5px; opacity: 0.85; color: #f1faee !important;} .tarjeta-gastos h1 {margin: 8px 0 0 0 !important; font-size: 2.2rem !important; font-weight: 700 !important; color: #ffffff !important;}</style>", unsafe_allow_html=True)
+st.markdown("<style>.tarjeta-gastos { background: linear-gradient(135deg, #781d1d 0%, #4a0e0e 100%); color: white !important; padding: 18px; border-radius: 16px; box-shadow: 0px 10px 25px rgba(0,0,0,0.15); text-align: center; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.1);}</style>", unsafe_allow_html=True)
+st.markdown("<style>.tarjeta-gastos h3 {margin: 0 !important; font-size: 0.85rem !important; letter-spacing: 1px; opacity: 0.85; color: #f1faee !important;} .tarjeta-gastos h1 {margin: 5px 0 0 0 !important; font-size: 1.9rem !important; font-weight: 700 !important; color: #ffffff !important;}</style>", unsafe_allow_html=True)
 
-st.markdown("<style>.contenedor-bancos {display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 25px;}</style>", unsafe_allow_html=True)
-st.markdown("<style>.tarjeta-banco {background-color: #1b1b1b; border: 1px solid #333; border-radius: 12px; padding: 12px; text-align: center; box-shadow: 0px 4px 10px rgba(0,0,0,0.15);}</style>", unsafe_allow_html=True)
-st.markdown("<style>.tarjeta-banco p {margin: 0 !important; font-size: 0.75rem; opacity: 0.7; text-transform: uppercase; font-weight: bold; letter-spacing: 0.5px;}</style>", unsafe_allow_html=True)
-st.markdown("<style>.tarjeta-banco h4 {margin: 5px 0 0 0 !important; font-size: 1.0rem; font-weight: 700; color: #457b9d !important;}</style>", unsafe_allow_html=True)
+st.markdown("<style>.contenedor-bancos {display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 20px;}</style>", unsafe_allow_html=True)
+st.markdown("<style>.tarjeta-banco {background-color: #1b1b1b; border: 1px solid #333; border-radius: 12px; padding: 10px; text-align: center; box-shadow: 0px 4px 10px rgba(0,0,0,0.15);}</style>", unsafe_allow_html=True)
+st.markdown("<style>.tarjeta-banco p {margin: 0 !important; font-size: 0.70rem; opacity: 0.7; text-transform: uppercase; font-weight: bold; letter-spacing: 0.5px;}</style>", unsafe_allow_html=True)
+st.markdown("<style>.tarjeta-banco h4 {margin: 3px 0 0 0 !important; font-size: 0.95rem; font-weight: 700; color: #457b9d !important;}</style>", unsafe_allow_html=True)
 
-st.markdown("<style>.item-historial { background-color: #1b1b1b; padding: 14px 18px; border-radius: 10px; margin-bottom: 10px; border-left: 6px solid #ccc; font-family: monospace; font-size: 0.95rem; box-shadow: 0px 4px 6px rgba(0,0,0,0.1);}</style>", unsafe_allow_html=True)
+st.markdown("<style>.item-historial { background-color: #1b1b1b; padding: 12px 15px; border-radius: 10px; margin-bottom: 8px; border-left: 5px solid #ccc; font-family: monospace; font-size: 0.85rem; box-shadow: 0px 4px 6px rgba(0,0,0,0.1);}</style>", unsafe_allow_html=True)
 st.markdown("<style>.ingreso-style { border-left-color: #2a9d8f !important; } .gasto-style { border-left-color: #e63946 !important; } .deuda-style { border-left-color: #f4a261 !important; } .pagada-style { border-left-color: #457b9d !important; } .meta-style { border-left-color: #a29bfe !important; }</style>", unsafe_allow_html=True)
 
 # --- BASE DE DATOS ---
@@ -41,8 +41,8 @@ if 'usuario_logeado' not in st.session_state: st.session_state.usuario_logeado =
 
 # --- LOGIN ---
 if st.session_state.usuario_logeado is None:
-    st.markdown("<div style='margin-top: 40px;'></div>", unsafe_allow_html=True)
-    st.markdown("<h1 style='text-align: center; font-weight: 800;'>📱 Finanzas Pro</h1>", unsafe_allow_html=True)
+    st.markdown("<div style='margin-top: 30px;'></div>", unsafe_allow_html=True)
+    st.markdown("<h1 style='text-align: center; font-weight: 800; font-size: 2rem;'>📱 Finanzas Pro</h1>", unsafe_allow_html=True)
     t1, t2 = st.tabs(["🔑 Iniciar Sesión", "📝 Registrarse"])
     with t1:
         u_l = st.text_input("Usuario:").lower().strip()
@@ -69,7 +69,7 @@ else:
     
     ARCH_HIST = f"{user}_hist.json"
     ARCH_DEUDAS = f"{user}_deudas_v2.json"
-    ARCH_METAS = f"{user}_metas.json" # Nuevo archivo de metas
+    ARCH_METAS = f"{user}_metas.json"
 
     def cargar_datos(tipo):
         if tipo == "hist": p = ARCH_HIST
@@ -101,18 +101,22 @@ else:
     saldos = {b: cargar_saldo(b) for b in BANCOS}
     total_disponible = sum(saldos.values())
 
+    # --- PANTALLA FIJA SUPERIOR (Saldos siempre visibles) ---
     st.markdown(f'<div class="tarjeta-saldo"><h3>TOTAL GENERAL DISPONIBLE</h3><h1>${total_disponible:,} COP</h1></div>', unsafe_allow_html=True)
     cols_html = "".join([f'<div class="tarjeta-banco"><p>{b}</p><h4>${saldos[b]:,}</h4></div>' for b in BANCOS])
     st.markdown(f'<div class="contenedor-bancos">{cols_html}</div>', unsafe_allow_html=True)
 
-    if st.button("🚪 Salir de la Cuenta", use_container_width=True):
-        st.session_state.usuario_logeado = None
-        st.rerun()
+    # --- 📱 NUEVO MENÚ ADAPTADO A CELULAR ---
+    st.markdown("<p style='margin-bottom:0px; font-size:0.85rem; opacity:0.7; font-weight:bold;'>📍 NAVEGACIÓN APLICACIÓN:</p>", unsafe_allow_html=True)
+    menu = st.selectbox(
+        "Selecciona una pestaña:",
+        ["📈 Estadísticas", "📊 Historial General", "💸 Registrar Movimientos", "📌 Control de Deudas", "🎯 Mis Metas"],
+        label_visibility="collapsed"
+    )
+    st.write("---")
 
-    p_stats, p_historial, p_mov, p_deu, p_metas = st.tabs(["📈 Stats", "📊 Historial", "💸 Movimientos", "📌 Deudas", "🎯 Metas"])
-
-    # --- ESTADÍSTICAS ---
-    with p_stats:
+    # --- SECCIÓN 1: ESTADÍSTICAS ---
+    if menu == "📈 Estadísticas":
         st.subheader("Resumen Analítico")
         df = pd.DataFrame(hist)
         total_gastado = 0
@@ -127,18 +131,18 @@ else:
                 st.write(f"🔹 **{cat}:** ${int(monto):,} ({porcentaje:.1f}%)")
         else: st.info("No registras gastos todavía.")
 
-    # --- HISTORIAL COMPLETO ---
-    with p_historial:
-        st.subheader("Lista de Movimientos Realizados")
+    # --- SECCIÓN 2: HISTORIAL COMPLETO ---
+    elif menu == "📊 Historial General":
+        st.subheader("Lista de Movimientos")
         if len(hist) == 0: st.info("No hay transacciones.")
         else:
             for h in reversed(hist):
                 if h['tipo'] == "Ingreso":
-                    st.markdown(f'<div class="item-historial ingreso-style">📈 <b>Ingreso ({h["banco"]}):</b> +${h["monto"]:,} COP <br> 📝 {h["det"]}</div>', unsafe_allow_html=True)
+                    st.markdown(f'<div class="item-historial ingreso-style">📈 <b>Ingreso ({h["banco"]}):</b> +${h["monto"]:,} <br> 📝 {h["det"]}</div>', unsafe_allow_html=True)
                 elif h['tipo'] == "Meta":
-                    st.markdown(f'<div class="item-historial meta-style">🎯 <b>Ahorro Meta ({h["banco"]}):</b> -${h["monto"]:,} COP <br> 🚀 Para: {h["det"]}</div>', unsafe_allow_html=True)
+                    st.markdown(f'<div class="item-historial meta-style">🎯 <b>Ahorro Meta ({h["banco"]}):</b> -${h["monto"]:,} <br> 🚀 Para: {h["det"]}</div>', unsafe_allow_html=True)
                 else:
-                    st.markdown(f'<div class="item-historial gasto-style">📉 <b>Gasto ({h["banco"]}):</b> -${h["monto"]:,} COP <br> 📁 Categoría: {h["cat"]} | {h["det"]}</div>', unsafe_allow_html=True)
+                    st.markdown(f'<div class="item-historial gasto-style">📉 <b>Gasto ({h["banco"]}):</b> -${h["monto"]:,} <br> 📁 {h["cat"]} | {h["det"]}</div>', unsafe_allow_html=True)
             st.write("---")
             if st.button("🗑️ Borrar Todo (Saldos y Movimientos)", use_container_width=True):
                 for b in BANCOS:
@@ -147,17 +151,18 @@ else:
                 if os.path.exists(ARCH_METAS): os.remove(ARCH_METAS)
                 st.rerun()
 
-    # --- MOVIMIENTOS ---
-    with p_mov:
+    # --- SECCIÓN 3: MOVIMIENTOS ---
+    elif menu == "💸 Registrar Movimientos":
         c1, c2, c3 = st.columns(3)
         with c1:
             if st.button("➕ Ingreso", use_container_width=True): st.session_state.modo = "ing"
         with c2:
             if st.button("➖ Gasto", use_container_width=True): st.session_state.modo = "gas"
         with c3:
-            if st.button("🎯 Ahorrar", use_container_width=True): st.session_state.modo = "meta"
+            if st.button("🎯 Ahorro", use_container_width=True): st.session_state.modo = "meta"
         
         modo_actual = st.session_state.get('modo', 'ing')
+        st.write("---")
         
         if modo_actual == "ing":
             st.markdown("### 📈 Añadir Fondos")
@@ -201,7 +206,7 @@ else:
         elif modo_actual == "meta":
             st.markdown("### 🎯 Guardar para una Meta")
             if not metas:
-                st.warning("Primero crea una meta en la pestaña 🎯 Metas")
+                st.warning("Primero crea una meta en la pestaña 🎯 Mis Metas")
             else:
                 b_m = st.selectbox("¿De qué cuenta sale el ahorro?", BANCOS, key="sel_b_meta")
                 meta_dest = st.selectbox("¿Para qué meta es?", list(metas.keys()))
@@ -216,13 +221,13 @@ else:
                         guardar_datos("hist", hist)
                         st.success(f"¡Ahorro para {meta_dest} registrado!")
                         st.rerun()
-                    else: st.error("Saldo insuficiente en el banco seleccionado.")
+                    else: st.error("Saldo insuficiente.")
 
-    # --- DEUDAS ---
-    with p_deu:
-        st.subheader("📌 Registrar Nueva Deuda")
-        id_n = st.text_input("ID Único:", placeholder="EJ: JUAN1").upper().strip()
-        concepto_n = st.text_input("Concepto:")
+    # --- SECCIÓN 4: DEUDAS ---
+    elif menu == "📌 Control de Deudas":
+        st.subheader("Gestión de Deudas")
+        id_n = st.text_input("ID Único Deuda:", placeholder="EJ: JUAN1").upper().strip()
+        concepto_n = st.text_input("Concepto o Razón:")
         m_n = st.number_input("Monto Inicial:", min_value=0, step=1000)
         if st.button("Crear Deuda 📌", use_container_width=True):
             if id_n and m_n > 0 and concepto_n:
@@ -251,10 +256,9 @@ else:
         if st.button("🗑️ Limpiar Historial de Deudas", use_container_width=True):
             if os.path.exists(ARCH_DEUDAS): os.remove(ARCH_DEUDAS); st.rerun()
 
-    # --- NUEVA PESTAÑA: METAS ---
-    with p_metas:
-        st.subheader("🎯 Mis Objetivos de Ahorro")
-        
+    # --- SECCIÓN 5: METAS ---
+    elif menu == "🎯 Mis Metas":
+        st.subheader("🎯 Objetivos de Ahorro")
         with st.expander("✨ Crear Nueva Meta"):
             nombre_m = st.text_input("¿Qué quieres comprar?", placeholder="Ej: PlayStation 6").strip()
             total_m = st.number_input("¿Cuánto cuesta?", min_value=0, step=50000)
@@ -262,12 +266,11 @@ else:
                 if nombre_m and total_m > 0:
                     metas[nombre_m] = {"objetivo": total_m, "ahorrado": 0}
                     guardar_datos("metas", metas)
-                    st.success(f"Meta '{nombre_m}' creada. ¡A por ella!")
+                    st.success(f"Meta '{nombre_m}' creada.")
                     st.rerun()
 
         st.write("---")
-        if not metas:
-            st.info("Aún no tienes metas creadas. ¡Define una arriba!")
+        if not metas: st.info("Aún no tienes metas creadas.")
         else:
             for m_nombre, m_datos in metas.items():
                 progreso = m_datos['ahorrado'] / m_datos['objetivo']
@@ -281,7 +284,7 @@ else:
                     st.balloons()
                     st.success("¡META ALCANZADA! 🥳")
                 
-                if st.button(f"Eliminar Meta: {m_nombre}", key=f"del_{m_nombre}"):
+                if st.button(f"Eliminar Meta: {m_nombre}", key=f"del_{m_nombre}", use_container_width=True):
                     del metas[m_nombre]
                     guardar_datos("metas", metas)
                     st.rerun()
@@ -289,3 +292,9 @@ else:
         st.write("---")
         if st.button("🗑️ Resetear todas las Metas", use_container_width=True):
             if os.path.exists(ARCH_METAS): os.remove(ARCH_METAS); st.rerun()
+
+    # --- BOTÓN DE SALIDA INDEPENDIENTE AL FINAL ---
+    st.write("---")
+    if st.button("🚪 Salir de la Cuenta", use_container_width=True):
+        st.session_state.usuario_logeado = None
+        st.rerun()
