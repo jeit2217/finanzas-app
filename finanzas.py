@@ -2,7 +2,6 @@ import streamlit as st
 import os
 import json
 import pandas as pd
-import re
 from datetime import datetime, timedelta
 
 # --- CONFIGURACIÓN ---
@@ -127,41 +126,6 @@ def procesar_monto_texto(texto):
     if limpio.isdigit(): return int(limpio)
     return 0
 
-# --- LÓGICA DEL EXTRACTOR DE TEXTO (PARSER) ---
-def parsear_notificacion_bancaria(texto):
-    if not texto: return None, None, ""
-    
-    texto_minuscula = texto.lower()
-    banco_detectado = "Efectivo" # Valor por defecto
-    
-    # 1. Identificación de Entidad Bancaria
-    if "nequi" in texto_minuscula or "¡listo!" in texto_minuscula:
-        banco_detectado = "Nequi"
-    elif "bancolombia" in texto_minuscula:
-        banco_detectado = "Nequi" # Mapeado a tu lista disponible (puedes ajustar si usas Nequi para Bancolombia)
-    elif "daviplata" in texto_minuscula:
-        banco_detectado = "Daviplata"
-    elif "nu:" in texto_minuscula or "nu colombia" in texto_minuscula or "nubank" in texto_minuscula:
-        banco_detectado = "Nu"
-        
-    # 2. Extracción del monto usando Expresiones Regulares (Busca el símbolo $ seguido de números, puntos o comas)
-    patron_monto = r'\$\s?([\d.,]+)'
-    coincidencia = re.search(patron_monto, texto)
-    monto_detectado = 0
-    if coincidencia:
-        monto_detectado = procesar_monto_texto(coincidencia.group(1))
-        
-    # 3. Intentar extraer un detalle básico (Donde se compró)
-    detalle = "Gasto Autodetectado"
-    if "en " in texto_minuscula:
-        partes = texto.split("en ")
-        if len(partes) > 1: detalle = f"Compra en {partes[1].strip()[:30]}"
-    elif "a " in texto_minuscula:
-        partes = texto.split("a ")
-        if len(partes) > 1: detalle = f"Pago a {partes[1].strip()[:30]}"
-        
-    return banco_detectado, monto_detectado, detalle
-
 # --- INICIALIZACIÓN DE VARIABLES EXPRÉS ---
 if 'usuario_logeado' not in st.session_state: st.session_state.usuario_logeado = None
 if 'val_express_ing' not in st.session_state: st.session_state.val_express_ing = 0
@@ -170,11 +134,6 @@ if 'val_express_met' not in st.session_state: st.session_state.val_express_met =
 if 'val_express_tra' not in st.session_state: st.session_state.val_express_tra = 0
 if 'val_express_deu' not in st.session_state: st.session_state.val_express_deu = 0
 if 'val_express_mcrear' not in st.session_state: st.session_state.val_express_mcrear = 0
-
-# Variables temporales para el autocompletado del scanner SMS
-if 'scan_monto' not in st.session_state: st.session_state.scan_monto = ""
-if 'scan_banco' not in st.session_state: st.session_state.scan_banco = "Efectivo"
-if 'scan_detalle' not in st.session_state: st.session_state.scan_detalle = ""
 
 # --- LOGIN ---
 if st.session_state.usuario_logeado is None:
@@ -250,9 +209,25 @@ else:
     saldos = {b: cargar_saldo(b) for b in BANCOS}
     total_disponible = sum(saldos.values())
 
-    # --- PANTALLA FIJA SUPERIOR ---
-    st.markdown(f'<div class="tarjeta-saldo"><h3>DISPONIBLE GENERAL</h3><h1>${total_disponible:,} COP</h1></div>', unsafe_allow_html=True)
-    cols_html = "".join([f'<div class="tarjeta-banco"><p>{b}</p><h4>${saldos[b]:,}</h4></div>' for b in BANCOS])
+    # --- LÓGICA DE CONVERSIÓN A MONEDA ESTABLE ---
+    st.write("### 💱 Visualización de Divisa")
+    moneda_visual = st.radio("Ver saldos y estadísticas en:", ["COP 🇨🇴", "USD 🇺🇸", "EUR 🇪🇺"], horizontal=True)
+    
+    # Tasas de cambio promedio (Modificables si varían mucho)
+    TASA_USD = 4100.0
+    TASA_EUR = 4400.0
+    
+    def formatear_moneda(valor_cop):
+        if moneda_visual == "USD 🇺🇸":
+            return f"${valor_cop / TASA_USD:,.2f} USD"
+        elif moneda_visual == "EUR 🇪🇺":
+            return f"€{valor_cop / TASA_EUR:,.2f} EUR"
+        else:
+            return f"${valor_cop:,} COP"
+
+    # --- PANTALLA FIJA SUPERIOR CON DIVISA ---
+    st.markdown(f'<div class="tarjeta-saldo"><h3>DISPONIBLE GENERAL</h3><h1>{formatear_moneda(total_disponible)}</h1></div>', unsafe_allow_html=True)
+    cols_html = "".join([f'<div class="tarjeta-banco"><p>{b}</p><h4>{formatear_moneda(saldos[b])}</h4></div>' for b in BANCOS])
     st.markdown(f'<div class="contenedor-bancos">{cols_html}</div>', unsafe_allow_html=True)
 
     # --- MÓDULO DE FECHAS ---
@@ -293,7 +268,7 @@ else:
         if not df.empty and "Gasto" in df['tipo'].values:
             total_gastado = int(df[df['tipo'] == "Gasto"]['monto'].sum())
         
-        st.markdown(f'<div class="tarjeta-gastos"><h3>GASTADO EN ESTE MES</h3><h1>${total_gastado:,} COP</h1></div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="tarjeta-gastos"><h3>GASTADO EN ESTE MES</h3><h1>{formatear_moneda(total_gastado)}</h1></div>', unsafe_allow_html=True)
         
         st.write("#### 🔍 Gastos por Categoría:")
         resumen_gastos = {c: 0 for c in CATEGORIAS}
@@ -305,13 +280,15 @@ else:
             monto_g = resumen_gastos[cat]
             tope_g = limites.get(cat, 0)
             col_a, col_b = st.columns([3, 1])
-            with col_a: st.write(f"🔹 **{cat}:** ${monto_g:,}" + (f" / ${tope_g:,}" if tope_g > 0 else ""))
+            with col_a: 
+                texto_limite = f" / {formatear_moneda(tope_g)}" if tope_g > 0 else ""
+                st.write(f"🔹 **{cat}:** {formatear_moneda(monto_g)}{texto_limite}")
             with col_b:
                 if total_gastado > 0 and monto_g > 0: st.write(f"({(monto_g/total_gastado)*100:.0f}%)")
             if tope_g > 0:
                 porcentaje_uso = monto_g / tope_g
                 st.progress(min(porcentaje_uso, 1.0))
-                if porcentaje_uso >= 1.0: st.error(f"🚨 ¡AGOTADO! Superaste el límite de {cat} por ${monto_g - tope_g:,}!")
+                if porcentaje_uso >= 1.0: st.error(f"🚨 ¡AGOTADO! Superaste el límite de {cat} por {formatear_moneda(monto_g - tope_g)}!")
                 elif porcentaje_uso >= 0.80: st.warning(f"⚠️ ¡Cuidado! Has gastado el {porcentaje_uso*100:.0f}% de tu cupo en {cat}.")
             st.write("")
 
@@ -322,16 +299,17 @@ else:
         else:
             for h in reversed(hist_filtrado):
                 f_formateada = h.get("fecha", "")
+                monto_formateado = formatear_moneda(h["monto"])
                 if h['tipo'] == "Ingreso":
-                    st.markdown(f'<div class="item-historial ingreso-style">📈 <b>[{f_formateada}] Ingreso ({h["banco"]}):</b> +${h["monto"]:,} <br> 📝 {h["det"]}</div>', unsafe_allow_html=True)
+                    st.markdown(f'<div class="item-historial ingreso-style">📈 <b>[{f_formateada}] Ingreso ({h["banco"]}):</b> +{monto_formateado} <br> 📝 {h["det"]}</div>', unsafe_allow_html=True)
                 elif h['tipo'] == "Meta":
-                    st.markdown(f'<div class="item-historial meta-style">🎯 <b>[{f_formateada}] Ahorro Meta ({h["banco"]}):</b> -${h["monto"]:,} <br> 🚀 Para: {h["det"]}</div>', unsafe_allow_html=True)
+                    st.markdown(f'<div class="item-historial meta-style">🎯 <b>[{f_formateada}] Ahorro Meta ({h["banco"]}):</b> -{monto_formateado} <br> 🚀 Para: {h["det"]}</div>', unsafe_allow_html=True)
                 elif h['tipo'] == "Transferencia":
-                    st.markdown(f'<div class="item-historial transferencia-style">🔄 <b>[{f_formateada}] Transferencia:</b> ${h["monto"]:,} <br> 🏦 Desde {h["banco"]} hacia {h["cat"]}</div>', unsafe_allow_html=True)
+                    st.markdown(f'<div class="item-historial transferencia-style">🔄 <b>[{f_formateada}] Transferencia:</b> {monto_formateado} <br> 🏦 Desde {h["banco"]} hacia {h["cat"]}</div>', unsafe_allow_html=True)
                 elif h['tipo'] == "Prestamo":
-                    st.markdown(f'<div class="item-historial prestamo-style">🤝 <b>[{f_formateada}] Dinero Prestado ({h["banco"]}):</b> -${h["monto"]:,} <br> 👤 A favor de: {h["det"]}</div>', unsafe_allow_html=True)
+                    st.markdown(f'<div class="item-historial prestamo-style">🤝 <b>[{f_formateada}] Dinero Prestado ({h["banco"]}):</b> -{monto_formateado} <br> 👤 A favor de: {h["det"]}</div>', unsafe_allow_html=True)
                 else:
-                    st.markdown(f'<div class="item-historial gasto-style">📉 <b>[{f_formateada}] Gasto ({h["banco"]}):</b> -${h["monto"]:,} <br> 📁 {h["cat"]} | {h["det"]}</div>', unsafe_allow_html=True)
+                    st.markdown(f'<div class="item-historial gasto-style">📉 <b>[{f_formateada}] Gasto ({h["banco"]}):</b> -{monto_formateado} <br> 📁 {h["cat"]} | {h["det"]}</div>', unsafe_allow_html=True)
 
     # --- SECCIÓN 3: MOVIMIENTOS ---
     with tab_mov:
@@ -364,23 +342,7 @@ else:
         
         elif modo_actual == "gas":
             st.write("### 📉 Registrar Gasto")
-            
-            # --- NUEVO LECTOR DE NOTIFICACIONES / SMS DE BANCOS ---
-            with st.expander("📥 Lector de Notificaciones / SMS Bancarios (Copia y Pega)"):
-                sms_texto = st.text_area("Pega aquí la notificación o mensaje de tu banco:")
-                if st.button("Procesar Mensaje ⚡", use_container_width=True):
-                    if sms_texto:
-                        bco_p, mnto_p, dtl_p = parsear_notificacion_bancaria(sms_texto)
-                        if mnto_p > 0:
-                            st.session_state.scan_monto = f"{mnto_p:,}"
-                            st.session_state.scan_banco = bco_p
-                            st.session_state.scan_detalle = dtl_p
-                            st.success(f"¡Datos extraídos! Banco: {bco_p} | Monto: ${mnto_p:,}")
-                        else:
-                            st.error("No se pudo extraer ningún valor en pesos ($) del mensaje.")
-            
-            # Formulario de gasto real
-            txt_m_g = st.text_input("Monto en COP:", value=st.session_state.scan_monto, key="monto_gasto_realtime")
+            txt_m_g = st.text_input("Monto en COP:", key="monto_gasto_realtime")
             m_g_temp = procesar_monto_texto(txt_m_g)
             
             # --- ALERTA PSICOLÓGICA QUINCENAL ---
@@ -403,23 +365,15 @@ else:
                     st.markdown(f'<div class="alerta-psicologica">🛒 {msg_psico}<br><span style="font-size:0.75rem; opacity:0.8;">¿Realmente vale la pena cambiar ese esfuerzo de tu quincena por este artículo? 🤔</span></div>', unsafe_allow_html=True)
 
             with st.form("form_gasto", clear_on_submit=True):
-                # Índice por defecto según el banco escaneado
-                idx_banco_por_defecto = BANCOS.index(st.session_state.scan_banco) if st.session_state.scan_banco in BANCOS else 0
-                
-                b_g = st.selectbox("¿De dónde sale el dinero?", BANCOS, index=idx_banco_por_defecto)
+                b_g = st.selectbox("¿De dónde sale el dinero?", BANCOS)
                 cat_g = st.selectbox("Categoría:", CATEGORIAS)
-                det_g = st.text_input("Detalle del gasto:", value=st.session_state.scan_detalle)
+                det_g = st.text_input("Detalle del gasto:")
                 
                 if st.form_submit_button("Confirmar Gasto 📉", use_container_width=True):
                     if m_g_temp > 0 and m_g_temp <= saldos[b_g]:
                         saldos[b_g] -= m_g_temp; guardar_saldo(b_g, saldos[b_g])
                         hist.append({"tipo": "Gasto", "banco": b_g, "monto": m_g_temp, "cat": cat_g, "det": det_g if det_g else f"Gasto en {cat_g}", "fecha": hoy_str})
-                        guardar_datos("hist", hist)
-                        # Limpiar caché del scanner al guardar de forma exitosa
-                        st.session_state.scan_monto = ""
-                        st.session_state.scan_banco = "Efectivo"
-                        st.session_state.scan_detalle = ""
-                        st.rerun()
+                        guardar_datos("hist", hist); st.rerun()
                     elif m_g_temp > saldos[b_g]:
                         st.error("❌ No tienes fondos suficientes en esa cuenta.")
 
@@ -475,7 +429,7 @@ else:
                 dias_restantes = (fecha_vence_obj.date() - hoy.date()).days
                 clase_css = "factura-vencida" if dias_restantes < 0 else ("factura-alerta" if dias_restantes <= 5 else "factura-al-dia")
                 
-                st.markdown(f'<div class="{clase_css}"><h4>{name}</h4><p>${monto_fac:,} COP | Vence: {fecha_vence_obj.strftime("%d/%m")}</p><p style="font-size:0.7rem;">Último: {data.get("ultimo_pago", "Nunca")}</p></div>', unsafe_allow_html=True)
+                st.markdown(f'<div class="{clase_css}"><h4>{name}</h4><p>{formatear_moneda(monto_fac)} | Vence: {fecha_vence_obj.strftime("%d/%m")}</p><p style="font-size:0.7rem;">Último: {data.get("ultimo_pago", "Nunca")}</p></div>', unsafe_allow_html=True)
                 banco_pago = st.selectbox("Pagar con:", BANCOS, key=f"b_{name}")
                 if st.button("PAGAR NOW 💸", key=f"p_{name}"):
                     if saldos[banco_pago] >= monto_fac:
@@ -513,7 +467,7 @@ else:
                         porcentaje = (ahorrado / objetivo) * 100 if objetivo > 0 else 0
                         porcentaje = min(porcentaje, 100.0)
                         
-                        st.markdown(f'<div class="cajon-meta"><h4>📦 {m_nombre}</h4><p class="porcentaje">{porcentaje:.0f}%</p><p><b>Ahorrado:</b><br>${ahorrado:,}</p><p style="opacity: 0.6; font-size: 0.75rem;">Meta: ${objetivo:,}</p></div>', unsafe_allow_html=True)
+                        st.markdown(f'<div class="cajon-meta"><h4>📦 {m_nombre}</h4><p class="porcentaje">{porcentaje:.0f}%</p><p><b>Ahorrado:</b><br>{formatear_moneda(ahorrado)}</p><p style="opacity: 0.6; font-size: 0.75rem;">Meta: {formatear_moneda(objetivo)}</p></div>', unsafe_allow_html=True)
                         st.progress(porcentaje / 100)
                         if st.button("🗑️ Romper", key=f"del_{m_nombre}", use_container_width=True):
                             del metas[m_nombre]; guardar_datos("metas", metas); st.rerun()
@@ -534,7 +488,7 @@ else:
         if limites:
             for c, m in list(limites.items()):
                 if m > 0:
-                    if st.button(f"Eliminar Límite {c}: ${m:,} COP", key=f"del_lim_{c}", use_container_width=True):
+                    if st.button(f"Eliminar Límite {c}: {formatear_moneda(m)}", key=f"del_lim_{c}", use_container_width=True):
                         del limites[c]; guardar_datos("limites", limites); st.rerun()
                         
         st.write("---")
@@ -558,7 +512,7 @@ else:
                     
         if config_trabajo:
             v_hora = config_trabajo['sueldo'] / config_trabajo['horas']
-            st.info(f"💡 Tu hora de trabajo equivale actualmente a: **${int(v_hora):,} COP** basado en tu quincena.")
+            st.info(f"💡 Tu hora de trabajo equivale actualmente a: **{formatear_moneda(int(v_hora))}** basado en tu quincena.")
 
     # --- SECCIÓN 7: 🤝 HISTORIAL DE DINERO PRESTADO ---
     with tab_pre:
@@ -588,7 +542,7 @@ else:
                 columnas_p = st.columns(3)
                 for idx, (p_id, p_datos) in enumerate(bloque_p):
                     with columnas_p[idx]:
-                        st.markdown(f'<div class="cajon-prestamo"><h4>👤 {p_datos["persona"]}</h4><p class="monto-deuda">-${p_datos["monto"]:,}</p><p style="font-size: 0.75rem; opacity: 0.8;">Salió de: {p_datos["banco_origen"]}</p><p style="font-size: 0.7rem; opacity: 0.5;">Prestado: {p_datos["fecha"]}</p></div>', unsafe_allow_html=True)
+                        st.markdown(f'<div class="cajon-prestamo"><h4>👤 {p_datos["persona"]}</h4><p class="monto-deuda">-{formatear_moneda(p_datos["monto"])}</p><p style="font-size: 0.75rem; opacity: 0.8;">Salió de: {p_datos["banco_origen"]}</p><p style="font-size: 0.7rem; opacity: 0.5;">Prestado: {p_datos["fecha"]}</p></div>', unsafe_allow_html=True)
                         banco_retorno = st.selectbox("¿Dónde te pagó?", BANCOS, key=f"ret_{p_id}")
                         if st.button("¡Ya me pagó! ✅", key=f"pay_{p_id}", use_container_width=True):
                             saldos[banco_retorno] += p_datos['monto']; guardar_saldo(banco_retorno, saldos[banco_retorno])
