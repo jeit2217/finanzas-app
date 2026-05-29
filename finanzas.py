@@ -37,11 +37,9 @@ def cargar_usuarios():
                 if len(p) == 2: u[p[0]] = p[1]
     return u
 
-# --- FUNCIÓN ADAPTADA PARA LEER MONTOS SEGUROS ---
 def procesar_monto_texto(texto):
     if not texto:
         return 0
-    # Limpiar puntos, comas, espacios y símbolos de pesos que el usuario ponga por error
     limpio = texto.replace(".", "").replace(",", "").replace("$", "").strip()
     if limpio.isdigit():
         return int(limpio)
@@ -161,7 +159,7 @@ else:
                 if os.path.exists(ARCH_METAS): os.remove(ARCH_METAS)
                 st.rerun()
 
-    # --- SECCIÓN 3: MOVIMIENTOS ---
+    # --- SECCIÓN 3: MOVIMIENTOS (CON CAPTURA AUTOMÁTICA EN UN CLICK) ---
     elif menu == "💸 Registrar Movimientos":
         c1, c2, c3 = st.columns(3)
         with c1:
@@ -175,101 +173,94 @@ else:
         st.write("---")
         
         if modo_actual == "ing":
-            st.markdown("### 📈 Añadir Fondos")
-            b_i = st.selectbox("¿Cuenta?", BANCOS, key="sel_ing")
-            
-            # Formato de texto seguro
-            txt_m_i = st.text_input("Monto en COP (Puedes usar puntos):", placeholder="Ej: 50.000", key="txt_num_ing")
-            m_i = procesar_monto_texto(txt_m_i)
-            st.caption(f"👀 Valor detectado: **${m_i:,} COP**")
-            
-            d_i = st.text_input("Detalle:", key="txt_ing")
-            if st.button("Guardar Ingreso 📈", use_container_width=True):
-                if m_i > 0:
-                    saldos[b_i] += m_i
-                    guardar_saldo(b_i, saldos[b_i])
-                    hist.append({"tipo": "Ingreso", "banco": b_i, "monto": m_i, "cat": "Ingreso", "det": d_i if d_i else "Ingreso general"})
-                    guardar_datos("hist", hist)
-                    st.rerun()
-                else: st.error("Ingresa un monto válido.")
+            with st.form("form_ingreso", clear_on_submit=True):
+                st.markdown("### 📈 Añadir Fondos")
+                b_i = st.selectbox("¿Cuenta?", BANCOS)
+                txt_m_i = st.text_input("Monto en COP (Ej: 50.000 o 50000):")
+                d_i = st.text_input("Detalle:")
+                
+                if st.form_submit_button("Guardar Ingreso 📈", use_container_width=True):
+                    m_i = procesar_monto_texto(txt_m_i)
+                    if m_i > 0:
+                        saldos[b_i] += m_i
+                        guardar_saldo(b_i, saldos[b_i])
+                        hist.append({"tipo": "Ingreso", "banco": b_i, "monto": m_i, "cat": "Ingreso", "det": d_i if d_i else "Ingreso general"})
+                        guardar_datos("hist", hist)
+                        st.rerun()
+                    else: st.error("Monto inválido.")
         
         elif modo_actual == "gas":
-            st.markdown("### 📉 Registrar Gasto")
-            b_g = st.selectbox("¿Cuenta?", BANCOS, key="sel_gas")
-            cat_g = st.selectbox("Categoría:", CATEGORIAS, key="sel_cat")
-            
-            # Formato de texto seguro
-            txt_m_g = st.text_input("Monto en COP (Puedes usar puntos):", placeholder="Ej: 15.000", key="txt_num_gas")
-            m_g = procesar_monto_texto(txt_m_g)
-            st.caption(f"👀 Valor detectado: **${m_g:,} COP**")
-            
-            paga_d = st.checkbox("¿Paga deuda?")
-            id_d = st.text_input("ID Deuda:").upper().strip() if paga_d else ""
-            if st.button("Confirmar Gasto 📉", use_container_width=True):
-                if m_g > 0 and m_g <= saldos[b_g]:
-                    if paga_d:
-                        if id_d in deudas and deudas[id_d]['estado'] == "activa":
-                            deudas[id_d]['monto_pendiente'] -= m_g
-                            deudas[id_d]['historial_pagos'].append(f"Abono de ${m_g:,} COP desde {b_g}")
-                            if deudas[id_d]['monto_pendiente'] <= 0:
-                                deudas[id_d]['monto_pendiente'] = 0
-                                deudas[id_d]['estado'] = "pagada"
-                                deudas[id_d]['historial_pagos'].append("🎉 ¡Pagada!")
-                            guardar_datos("deudas", deudas)
-                        else: st.error("ID inválido."); st.stop()
-                    saldos[b_g] -= m_g
-                    guardar_saldo(b_g, saldos[b_g])
-                    hist.append({"tipo": "Gasto", "banco": b_g, "monto": m_g, "cat": cat_g, "det": f"Abono ID: {id_d}" if paga_d else f"Gasto: {cat_g}"})
-                    guardar_datos("hist", hist)
-                    st.rerun()
-                elif m_g > saldos[b_g]: st.error("Saldo insuficiente.")
-                else: st.error("Ingresa un monto válido.")
+            with st.form("form_gasto", clear_on_submit=True):
+                st.markdown("### 📉 Registrar Gasto")
+                b_g = st.selectbox("¿Cuenta?", BANCOS)
+                cat_g = st.selectbox("Categoría:", CATEGORIAS)
+                txt_m_g = st.text_input("Monto en COP (Ej: 15.000 o 15000):")
+                paga_d = st.checkbox("¿Paga deuda?")
+                id_d = st.text_input("ID Deuda (Si aplica):").upper().strip()
+                
+                if st.form_submit_button("Confirmar Gasto 📉", use_container_width=True):
+                    m_g = procesar_monto_texto(txt_m_g)
+                    if m_g > 0 and m_g <= saldos[b_g]:
+                        if paga_d:
+                            if id_d in deudas and deudas[id_d]['estado'] == "activa":
+                                deudas[id_d]['monto_pendiente'] -= m_g
+                                deudas[id_d]['historial_pagos'].append(f"Abono de ${m_g:,} COP desde {b_g}")
+                                if deudas[id_d]['monto_pendiente'] <= 0:
+                                    deudas[id_d]['monto_pendiente'] = 0
+                                    deudas[id_d]['estado'] = "pagada"
+                                    deudas[id_d]['historial_pagos'].append("🎉 ¡Pagada!")
+                                guardar_datos("deudas", deudas)
+                            else: st.error("ID de deuda inválido."); st.stop()
+                        saldos[b_g] -= m_g
+                        guardar_saldo(b_g, saldos[b_g])
+                        hist.append({"tipo": "Gasto", "banco": b_g, "monto": m_g, "cat": cat_g, "det": f"Abono ID: {id_d}" if paga_d else f"Gasto: {cat_g}"})
+                        guardar_datos("hist", hist)
+                        st.rerun()
+                    elif m_g > saldos[b_g]: st.error("Saldo insuficiente.")
+                    else: st.error("Monto inválido.")
         
         elif modo_actual == "meta":
-            st.markdown("### 🎯 Guardar para una Meta")
             if not metas:
                 st.warning("Primero crea una meta en la pestaña 🎯 Mis Metas")
             else:
-                b_m = st.selectbox("¿De qué cuenta sale el ahorro?", BANCOS, key="sel_b_meta")
-                meta_dest = st.selectbox("¿Para qué meta es?", list(metas.keys()))
-                
-                # Formato de texto seguro
-                txt_m_m = st.text_input("Monto a ahorrar (Puedes usar puntos):", placeholder="Ej: 100.000", key="txt_num_met")
-                m_m = procesar_monto_texto(txt_m_m)
-                st.caption(f"👀 Valor detectado: **${m_m:,} COP**")
-                
-                if st.button("Confirmar Ahorro 🚀", use_container_width=True):
-                    if m_m > 0 and m_m <= saldos[b_m]:
-                        saldos[b_m] -= m_m
-                        guardar_saldo(b_m, saldos[b_m])
-                        metas[meta_dest]['ahorrado'] += m_m
-                        guardar_datos("metas", metas)
-                        hist.append({"tipo": "Meta", "banco": b_m, "monto": m_m, "cat": "Ahorro", "det": meta_dest})
-                        guardar_datos("hist", hist)
-                        st.success(f"¡Ahorro para {meta_dest} registrado!")
-                        st.rerun()
-                    elif m_m > saldos[b_m]: st.error("Saldo insuficiente.")
-                    else: st.error("Ingresa un monto válido.")
+                with st.form("form_meta", clear_on_submit=True):
+                    st.markdown("### 🎯 Guardar para una Meta")
+                    b_m = st.selectbox("¿De qué cuenta sale el ahorro?", BANCOS)
+                    meta_dest = st.selectbox("¿Para qué meta es?", list(metas.keys()))
+                    txt_m_m = st.text_input("Monto a ahorrar (Ej: 100.000 o 10000):")
+                    
+                    if st.form_submit_button("Confirmar Ahorro 🚀", use_container_width=True):
+                        m_m = procesar_monto_texto(txt_m_m)
+                        if m_m > 0 and m_m <= saldos[b_m]:
+                            saldos[b_m] -= m_m
+                            guardar_saldo(b_m, saldos[b_m])
+                            metas[meta_dest]['ahorrado'] += m_m
+                            guardar_datos("metas", metas)
+                            hist.append({"tipo": "Meta", "banco": b_m, "monto": m_m, "cat": "Ahorro", "det": meta_dest})
+                            guardar_datos("hist", hist)
+                            st.rerun()
+                        elif m_m > saldos[b_m]: st.error("Saldo insuficiente.")
+                        else: st.error("Monto inválido.")
 
     # --- SECCIÓN 4: DEUDAS ---
     elif menu == "📌 Control de Deudas":
-        st.subheader("Gestión de Deudas")
-        id_n = st.text_input("ID Único Deuda:", placeholder="EJ: JUAN1").upper().strip()
-        concepto_n = st.text_input("Concepto o Razón:")
+        with st.form("form_crear_deuda", clear_on_submit=True):
+            st.subheader("Gestión de Deudas")
+            id_n = st.text_input("ID Único Deuda:", placeholder="EJ: JUAN1").upper().strip()
+            concepto_n = st.text_input("Concepto o Razón:")
+            txt_m_n = st.text_input("Monto Inicial (Ej: 200.000 o 20000):")
+            
+            if st.form_submit_button("Crear Deuda 📌", use_container_width=True):
+                m_n = procesar_monto_texto(txt_m_n)
+                if id_n and m_n > 0 and concepto_n:
+                    if id_n in deudas: st.error("ID ya existe.")
+                    else:
+                        deudas[id_n] = {"concepto": concepto_n, "monto_inicial": m_n, "monto_pendiente": m_n, "estado": "activa", "historial_pagos": [f"Creada por ${m_n:,}"]}
+                        guardar_datos("deudas", deudas)
+                        st.session_state["deuda_creada_ok"] = True
+                else: st.error("Por favor completa los datos con un monto válido.")
         
-        # Formato de texto seguro
-        txt_m_n = st.text_input("Monto Inicial (Puedes usar puntos):", placeholder="Ej: 200.000", key="txt_num_deu")
-        m_n = procesar_monto_texto(txt_m_n)
-        st.caption(f"👀 Valor detectado: **${m_n:,} COP**")
-        
-        if st.button("Crear Deuda 📌", use_container_width=True):
-            if id_n and m_n > 0 and concepto_n:
-                if id_n in deudas: st.error("ID ya existe.")
-                else:
-                    deudas[id_n] = {"concepto": concepto_n, "monto_inicial": m_n, "monto_pendiente": m_n, "estado": "activa", "historial_pagos": [f"Creada por ${m_n:,}"]}
-                    guardar_datos("deudas", deudas)
-                    st.rerun()
-            else: st.error("Verifica que todos los campos estén llenos y el monto sea válido.")
+        if st.session_state.pop("deuda_creada_ok", False): st.rerun()
 
         st.write("---")
         d_act = {k: v for k, v in deudas.items() if v.get('estado', 'activa') == "activa"}
@@ -293,21 +284,19 @@ else:
     # --- SECCIÓN 5: METAS ---
     elif menu == "🎯 Mis Metas":
         st.subheader("🎯 Objetivos de Ahorro")
-        with st.expander("✨ Crear Nueva Meta"):
+        with st.form("form_crear_meta", clear_on_submit=True):
             nombre_m = st.text_input("¿Qué quieres comprar?", placeholder="Ej: PlayStation 6").strip()
+            txt_total_m = st.text_input("¿Cuánto cuesta? (Ej: 2.500.000 o 2500000):")
             
-            # Formato de texto seguro
-            txt_total_m = st.text_input("¿Cuánto cuesta? (Puedes usar puntos):", placeholder="Ej: 2.500.000", key="txt_num_met_crear")
-            total_m = procesar_monto_texto(txt_total_m)
-            st.caption(f"👀 Valor detectado: **${total_m:,} COP**")
-            
-            if st.button("Establecer Meta 🎯", use_container_width=True):
+            if st.form_submit_button("Establecer Meta 🎯", use_container_width=True):
+                total_m = procesar_monto_texto(txt_total_m)
                 if nombre_m and total_m > 0:
                     metas[nombre_m] = {"objetivo": total_m, "ahorrado": 0}
                     guardar_datos("metas", metas)
-                    st.success(f"Meta '{nombre_m}' creada.")
-                    st.rerun()
+                    st.session_state["meta_creada_ok"] = True
                 else: st.error("Verifica los datos ingresados.")
+        
+        if st.session_state.pop("meta_creada_ok", False): st.rerun()
 
         st.write("---")
         if not metas: st.info("Aún no tienes metas creadas.")
