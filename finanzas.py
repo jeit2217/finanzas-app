@@ -53,6 +53,17 @@ st.markdown("""
     .cajon-prestamo p { margin: 2px 0 !important; font-size: 0.85rem; opacity: 0.9; }
     .cajon-prestamo .monto-deuda { font-size: 1.25rem; font-weight: bold; color: #ffadad; margin: 5px 0 !important; }
 
+    /* Alerta psicológica del convertidor de trabajo */
+    .alerta-psicologica {
+        background-color: #3b2314 !important;
+        border-left: 6px solid #f39c12 !important;
+        border-radius: 8px;
+        padding: 12px;
+        margin-top: 10px;
+        margin-bottom: 15px;
+        font-size: 0.9rem;
+    }
+
     /* --- REGLAS ESPECÍFICAS PARA CELULARES --- */
     @media (max-width: 768px) {
         .block-container { 
@@ -156,13 +167,15 @@ else:
     ARCH_FACTURAS = f"{user}_facturas.json"
     ARCH_METAS = f"{user}_metas.json"
     ARCH_LIMITES = f"{user}_limites.json"
-    ARCH_PRESTAMOS = f"{user}_prestamos.json" # <--- Nuevo archivo independiente
+    ARCH_PRESTAMOS = f"{user}_prestamos.json"
+    ARCH_TRABAJO = f"{user}_trabajo.json" # <--- Nuevo archivo de configuración psicológica
 
     def cargar_datos(tipo):
         if tipo == "hist": p = ARCH_HIST
         elif tipo == "facturas": p = ARCH_FACTURAS
         elif tipo == "limites": p = ARCH_LIMITES
         elif tipo == "prestamos": p = ARCH_PRESTAMOS
+        elif tipo == "trabajo": p = ARCH_TRABAJO
         else: p = ARCH_METAS
         
         if os.path.exists(p):
@@ -174,6 +187,7 @@ else:
         elif tipo == "facturas": p = ARCH_FACTURAS
         elif tipo == "limites": p = ARCH_LIMITES
         elif tipo == "prestamos": p = ARCH_PRESTAMOS
+        elif tipo == "trabajo": p = ARCH_TRABAJO
         else: p = ARCH_METAS
         with open(p, "w") as f: json.dump(d, f)
 
@@ -190,7 +204,8 @@ else:
     facturas = cargar_datos("facturas")
     metas = cargar_datos("metas")
     limites = cargar_datos("limites")
-    prestamos = cargar_datos("prestamos") # <--- Carga independiente
+    prestamos = cargar_datos("prestamos")
+    config_trabajo = cargar_datos("trabajo") # <--- Carga de configuración laboral
     saldos = {b: cargar_saldo(b) for b in BANCOS}
     total_disponible = sum(saldos.values())
 
@@ -226,7 +241,7 @@ else:
         lbl = f"{MESES_DICT[fecha_obj.strftime('%m')]} {fecha_obj.strftime('%Y')}"
         if lbl == mes_seleccionado: hist_filtrado.append(h)
 
-    # --- NAVEGACIÓN EN TABS (Añadida pestaña 🤝 Préstamos) ---
+    # --- NAVEGACIÓN EN TABS ---
     tab_est, tab_hist, tab_mov, tab_fac, tab_met, tab_lim, tab_pre = st.tabs(["📈 Stats", "📊 Hist", "💸 Movs", "🧾 Recibos", "🎯 Alcancías", "📉 Topes", "🤝 Préstamos"])
 
     # --- SECCIÓN 1: ESTADÍSTICAS ---
@@ -308,17 +323,39 @@ else:
         
         elif modo_actual == "gas":
             st.write("### 📉 Registrar Gasto")
+            
+            # --- LÓGICA DINÁMICA DEL CONVERTIDOR PSICOLÓGICO (En tiempo real) ---
+            txt_m_g = st.text_input("Monto en COP:", key="monto_gasto_realtime")
+            m_g_temp = procesar_monto_texto(txt_m_g)
+            
+            # Si el usuario configuró su salario, calculamos el valor de su tiempo antes de que guarde
+            if config_trabajo and m_g_temp > 0:
+                sueldo = config_trabajo.get("sueldo", 0)
+                horas = config_trabajo.get("horas", 160)
+                if sueldo > 0 and horas > 0:
+                    valor_hora = sueldo / horas
+                    horas_necesarias = m_g_temp / valor_hora
+                    
+                    if horas_necesarias >= 8:
+                        dias = horas_necesarias / 8
+                        msg_psico = f"⏳ Alerta: Este gasto equivale a **{dias:.1f} días** completos de tu esfuerzo laboral."
+                    else:
+                        msg_psico = f"⏳ Alerta: Este gasto equivale a **{horas_necesarias:.1f} horas** de tu vida sentado trabajando."
+                    
+                    st.markdown(f'<div class="alerta-psicologica">🛒 {msg_psico}<br><span style="font-size:0.75rem; opacity:0.8;">¿Realmente vale la pena cambiar ese tiempo de tu vida por este artículo? 🤔</span></div>', unsafe_allow_html=True)
+
             with st.form("form_gasto", clear_on_submit=True):
                 b_g = st.selectbox("¿De dónde sale el dinero?", BANCOS)
                 cat_g = st.selectbox("Categoría:", CATEGORIAS)
-                txt_m_g = st.text_input("Monto en COP:")
                 det_g = st.text_input("Detalle del gasto:")
+                
                 if st.form_submit_button("Confirmar Gasto 📉", use_container_width=True):
-                    m_g = procesar_monto_texto(txt_m_g)
-                    if m_g > 0 and m_g <= saldos[b_g]:
-                        saldos[b_g] -= m_g; guardar_saldo(b_g, saldos[b_g])
-                        hist.append({"tipo": "Gasto", "banco": b_g, "monto": m_g, "cat": cat_g, "det": det_g if det_g else f"Gasto en {cat_g}", "fecha": hoy_str})
+                    if m_g_temp > 0 and m_g_temp <= saldos[b_g]:
+                        saldos[b_g] -= m_g_temp; guardar_saldo(b_g, saldos[b_g])
+                        hist.append({"tipo": "Gasto", "banco": b_g, "monto": m_g_temp, "cat": cat_g, "det": det_g if det_g else f"Gasto en {cat_g}", "fecha": hoy_str})
                         guardar_datos("hist", hist); st.rerun()
+                    elif m_g_temp > saldos[b_g]:
+                        st.error("❌ No tienes fondos suficientes en esa cuenta.")
 
         elif modo_actual == "meta":
             if not metas: st.warning("Crea una meta primero.")
@@ -383,10 +420,9 @@ else:
                         data["fecha_vencimiento"] = (fecha_vence_obj + timedelta(days=30)).strftime("%Y-%m-%d")
                         guardar_datos("facturas", facturas); st.rerun()
 
-    # --- SECCIÓN 5: METAS COMO CAJONES EN CUADRÍCULA ---
+    # --- SECCIÓN 5: METAS ---
     with tab_met:
         st.write("### 🎯 Mis Alcancías de Ahorro")
-        
         with st.expander("➕ Crear Nueva Alcancía / Meta"):
             with st.form("form_crear_meta", clear_on_submit=True):
                 nombre_m = st.text_input("¿Qué deseas lograr? (Ej: Viaje, Celular)").strip()
@@ -395,19 +431,15 @@ else:
                     total_m = procesar_monto_texto(txt_total_m)
                     if nombre_m and total_m > 0:
                         metas[nombre_m] = {"objetivo": total_m, "ahorrado": 0}
-                        guardar_datos("metas", metas)
-                        st.rerun()
+                        guardar_datos("metas", metas); st.rerun()
 
         st.write("---")
-        
-        if not metas: 
-            st.info("No tienes alcancías creadas. Abre el menú de arriba para empezar a ahorrar.")
+        if not metas: st.info("No tienes alcancías creadas.")
         else:
             items_metas = list(metas.items())
             for i in range(0, len(items_metas), 3):
                 bloque = items_metas[i:i+3]
                 columnas = st.columns(3)
-                
                 for idx, (m_nombre, m_datos) in enumerate(bloque):
                     with columnas[idx]:
                         objetivo = m_datos['objetivo']
@@ -415,24 +447,13 @@ else:
                         porcentaje = (ahorrado / objetivo) * 100 if objetivo > 0 else 0
                         porcentaje = min(porcentaje, 100.0)
                         
-                        st.markdown(f"""
-                        <div class="cajon-meta">
-                            <h4>📦 {m_nombre}</h4>
-                            <p class="porcentaje">{porcentaje:.0f}%</p>
-                            <p><b>Ahorrado:</b><br>${ahorrado:,}</p>
-                            <p style="opacity: 0.6; font-size: 0.75rem;">Meta: ${objetivo:,}</p>
-                        </div>
-                        """, unsafe_allow_html=True)
-                        
+                        st.markdown(f'<div class="cajon-meta"><h4>📦 {m_nombre}</h4><p class="porcentaje">{porcentaje:.0f}%</p><p><b>Ahorrado:</b><br>${ahorrado:,}</p><p style="opacity: 0.6; font-size: 0.75rem;">Meta: ${objetivo:,}</p></div>', unsafe_allow_html=True)
                         st.progress(porcentaje / 100)
-                        
                         if st.button("🗑️ Romper", key=f"del_{m_nombre}", use_container_width=True):
-                            del metas[m_nombre]
-                            guardar_datos("metas", metas)
-                            st.rerun()
+                            del metas[m_nombre]; guardar_datos("metas", metas); st.rerun()
                 st.write("")
 
-    # --- SECCIÓN 6: CONFIGURACIÓN DE TOPES/LÍMITES ---
+    # --- SECCIÓN 6: CONFIGURACIÓN DE TOPES + CONFIG TRABAJO ---
     with tab_lim:
         st.write("### 📉 Configurar Límites Mensuales")
         with st.form("form_limites"):
@@ -449,12 +470,34 @@ else:
                 if m > 0:
                     if st.button(f"Eliminar Límite {c}: ${m:,} COP", key=f"del_lim_{c}", use_container_width=True):
                         del limites[c]; guardar_datos("limites", limites); st.rerun()
+                        
+        # --- NUEVO FORMULARIO INDEPENDIENTE: CONVERTIDOR DE TRABAJO ---
+        st.write("---")
+        st.write("### ⏳ Configuración de Psicología del Gasto")
+        st.write("Introduce tus datos laborales para calcular el valor real de tu tiempo:")
+        
+        sueldo_actual_conf = config_trabajo.get("sueldo", 0)
+        horas_actual_conf = config_trabajo.get("horas", 160)
+        
+        with st.form("form_psico_trabajo"):
+            txt_sueldo = st.text_input("¿Cuánto te ganas neto al mes (COP)?", value=f"{sueldo_actual_conf:,}" if sueldo_actual_conf else "")
+            horas_lab = st.number_input("¿Cuántas horas trabajas al mes?", min_value=1, max_value=400, value=horas_actual_conf)
+            
+            if st.form_submit_button("Guardar Configuración Laboral 💾", use_container_width=True):
+                sueldo_num = procesar_monto_texto(txt_sueldo)
+                if sueldo_num > 0 and horas_lab > 0:
+                    config_trabajo = {"sueldo": sueldo_num, "horas": horas_lab}
+                    guardar_datos("trabajo", config_trabajo)
+                    st.success("¡Configuración de tiempo guardada!")
+                    st.rerun()
+                    
+        if config_trabajo:
+            v_hora = config_trabajo['sueldo'] / config_trabajo['horas']
+            st.info(f"💡 Tu hora de trabajo equivale actualmente a: **${int(v_hora):,} COP**")
 
-    # --- NUEVA SECCIÓN 7: 🤝 HISTORIAL DE DINERO PRESTADO ---
+    # --- SECCIÓN 7: 🤝 HISTORIAL DE DINERO PRESTADO ---
     with tab_pre:
         st.write("### 🤝 Control de Dinero Prestado")
-        
-        # Formulario para registrar un préstamo nuevo
         with st.expander("💸 Registrar Nuevo Préstamo"):
             with st.form("form_crear_prestamo", clear_on_submit=True):
                 persona_p = st.text_input("¿A quién le prestaste? (Nombre):").strip()
@@ -463,72 +506,30 @@ else:
                 if st.form_submit_button("Confirmar Préstamo 💸", use_container_width=True):
                     monto_p = procesar_monto_texto(txt_monto_p)
                     if persona_p and monto_p > 0 and monto_p <= saldos[banco_p]:
-                        # 1. Descontar del banco de donde salió la plata
-                        saldos[banco_p] -= monto_p
-                        guardar_saldo(banco_p, saldos[banco_p])
-                        
-                        # 2. Guardar en la base de datos de préstamos de forma única (llave aleatoria por si hay nombres repetidos)
+                        saldos[banco_p] -= monto_p; guardar_saldo(banco_p, saldos[banco_p])
                         id_prestamo = f"{persona_p}_{datetime.now().strftime('%M%S')}"
-                        prestamos[id_prestamo] = {
-                            "persona": persona_p,
-                            "monto": monto_p,
-                            "banco_origen": banco_p,
-                            "fecha": hoy.strftime("%d/%m/%Y")
-                        }
+                        prestamos[id_prestamo] = {"persona": persona_p, "monto": monto_p, "banco_origen": banco_p, "fecha": hoy.strftime("%d/%m/%Y")}
                         guardar_datos("prestamos", prestamos)
-                        
-                        # 3. Registrar salida en el historial general
                         hist.append({"tipo": "Prestamo", "banco": banco_p, "monto": monto_p, "cat": "Deudas", "det": persona_p, "fecha": hoy.strftime("%Y-%m-%d")})
-                        guardar_datos("hist", hist)
-                        st.rerun()
-                    elif monto_p > saldos[banco_p]:
-                        st.error("❌ No tienes fondos suficientes en esa cuenta.")
+                        guardar_datos("hist", hist); st.rerun()
+                    elif monto_p > saldos[banco_p]: st.error("❌ No tienes fondos suficientes.")
 
         st.write("---")
-        
-        if not prestamos:
-            st.info("¡Al día! Nadie te debe dinero actualmente. 😎")
+        if not prestamos: st.info("¡Al día! Nadie te debe dinero actualmente. 😎")
         else:
-            # Desplegar los cajones de deudas en una cuadrícula de 3 columnas
             items_prestamos = list(prestamos.items())
             for i in range(0, len(items_prestamos), 3):
                 bloque_p = items_prestamos[i:i+3]
                 columnas_p = st.columns(3)
-                
                 for idx, (p_id, p_datos) in enumerate(bloque_p):
                     with columnas_p[idx]:
-                        st.markdown(f"""
-                        <div class="cajon-prestamo">
-                            <h4>👤 {p_datos['persona']}</h4>
-                            <p class="monto-deuda">-${p_datos['monto']:,}</p>
-                            <p style="font-size: 0.75rem; opacity: 0.8;">Salió de: {p_datos['banco_origen']}</p>
-                            <p style="font-size: 0.7rem; opacity: 0.5;">Prestado: {p_datos['fecha']}</p>
-                        </div>
-                        """, unsafe_allow_html=True)
-                        
-                        # Selector para elegir a qué cuenta te va a pagar de vuelta
+                        st.markdown(f'<div class="cajon-prestamo"><h4>👤 {p_datos["persona"]}</h4><p class="monto-deuda">-${p_datos["monto"]:,}</p><p style="font-size: 0.75rem; opacity: 0.8;">Salió de: {p_datos["banco_origen"]}</p><p style="font-size: 0.7rem; opacity: 0.5;">Prestado: {p_datos["fecha"]}</p></div>', unsafe_allow_html=True)
                         banco_retorno = st.selectbox("¿Dónde te pagó?", BANCOS, key=f"ret_{p_id}")
-                        
                         if st.button("¡Ya me pagó! ✅", key=f"pay_{p_id}", use_container_width=True):
-                            # 1. Sumar el dinero de vuelta al banco seleccionado
-                            saldos[banco_retorno] += p_datos['monto']
-                            guardar_saldo(banco_retorno, saldos[banco_retorno])
-                            
-                            # 2. Registrar la entrada de dinero en el historial como ingreso
-                            hist.append({
-                                "tipo": "Ingreso", 
-                                "banco": banco_retorno, 
-                                "monto": p_datos['monto'], 
-                                "cat": "Ingreso", 
-                                "det": f"Pago recibido de {p_datos['persona']}", 
-                                "fecha": hoy.strftime("%Y-%m-%d")
-                            })
+                            saldos[banco_retorno] += p_datos['monto']; guardar_saldo(banco_retorno, saldos[banco_retorno])
+                            hist.append({"tipo": "Ingreso", "banco": banco_retorno, "monto": p_datos['monto'], "cat": "Ingreso", "det": f"Pago recibido de {p_datos['persona']}", "fecha": hoy.strftime("%Y-%m-%d")})
                             guardar_datos("hist", hist)
-                            
-                            # 3. Eliminar la deuda de la base de datos
-                            del prestamos[p_id]
-                            guardar_datos("prestamos", prestamos)
-                            st.rerun()
+                            del prestamos[p_id]; guardar_datos("prestamos", prestamos); st.rerun()
                 st.write("")
 
     # --- BOTÓN DE SALIDA ---
