@@ -18,7 +18,7 @@ st.markdown("""
     .stTabs [data-baseweb="tab-list"] { gap: 10px !important; }
     .stTabs [data-baseweb="tab"] { padding: 12px 16px !important; font-size: 1rem !important; }
     .stButton button { min-height: 40px !important; border-radius: 10px !important; }
-    .contenedor-bancos { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+    .contenedor-bancos { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 20px; }
 
     /* Estilos para las alertas de facturas */
     .factura-vencida { background-color: #781d1d !important; border-left: 6px solid #e63946 !important; border-radius: 8px; padding: 10px; margin-bottom: 8px; }
@@ -160,7 +160,8 @@ if st.session_state.usuario_logeado is None:
 # --- APP PRINCIPAL ---
 else:
     user = st.session_state.usuario_logeado
-    BANCOS = ["Efectivo", "Nequi", "Daviplata", "Nu"]
+    # AGREGADA LA OPCIÓN DE "GUARDADO / AHORRO"
+    BANCOS = ["Efectivo", "Nequi", "Daviplata", "Nu", "Guardado / Ahorro"]
     CATEGORIAS = ["Comida", "Transporte", "Rumba", "Deudas", "Hogar", "Otros"]
     
     ARCH_HIST = f"{user}_hist.json"
@@ -192,13 +193,16 @@ else:
         with open(p, "w") as f: json.dump(d, f)
 
     def cargar_saldo(b):
-        p = f"{user}_s_{b.lower()}.txt"
+        # Reemplazar caracteres especiales para nombres de archivos limpios
+        nombre_arch = b.lower().replace(" / ", "_").replace(" ", "_")
+        p = f"{user}_s_{nombre_arch}.txt"
         if os.path.exists(p):
             with open(p, "r") as f: return int(f.read())
         return 0
 
     def guardar_saldo(b, s):
-        with open(f"{user}_s_{b.lower()}.txt", "w") as f: f.write(str(s))
+        nombre_arch = b.lower().replace(" / ", "_").replace(" ", "_")
+        with open(f"{user}_s_{nombre_arch}.txt", "w") as f: f.write(str(s))
 
     hist = cargar_datos("hist")
     facturas = cargar_datos("facturas")
@@ -213,7 +217,7 @@ else:
     st.write("### 💱 Visualización de Divisa")
     moneda_visual = st.radio("Ver saldos y estadísticas en:", ["COP 🇨🇴", "USD 🇺🇸", "EUR 🇪🇺"], horizontal=True)
     
-    # Tasas de cambio promedio (Modificables si varían mucho)
+    # Tasas de cambio promedio
     TASA_USD = 4100.0
     TASA_EUR = 4400.0
     
