@@ -37,6 +37,16 @@ def cargar_usuarios():
                 if len(p) == 2: u[p[0]] = p[1]
     return u
 
+# --- FUNCIÓN ADAPTADA PARA LEER MONTOS SEGUROS ---
+def procesar_monto_texto(texto):
+    if not texto:
+        return 0
+    # Limpiar puntos, comas, espacios y símbolos de pesos que el usuario ponga por error
+    limpio = texto.replace(".", "").replace(",", "").replace("$", "").strip()
+    if limpio.isdigit():
+        return int(limpio)
+    return 0
+
 if 'usuario_logeado' not in st.session_state: st.session_state.usuario_logeado = None
 
 # --- LOGIN ---
@@ -101,12 +111,12 @@ else:
     saldos = {b: cargar_saldo(b) for b in BANCOS}
     total_disponible = sum(saldos.values())
 
-    # --- PANTALLA FIJA SUPERIOR (Saldos siempre visibles) ---
+    # --- PANTALLA FIJA SUPERIOR ---
     st.markdown(f'<div class="tarjeta-saldo"><h3>TOTAL GENERAL DISPONIBLE</h3><h1>${total_disponible:,} COP</h1></div>', unsafe_allow_html=True)
     cols_html = "".join([f'<div class="tarjeta-banco"><p>{b}</p><h4>${saldos[b]:,}</h4></div>' for b in BANCOS])
     st.markdown(f'<div class="contenedor-bancos">{cols_html}</div>', unsafe_allow_html=True)
 
-    # --- 📱 NUEVO MENÚ ADAPTADO A CELULAR ---
+    # --- 📱 MENÚ ---
     st.markdown("<p style='margin-bottom:0px; font-size:0.85rem; opacity:0.7; font-weight:bold;'>📍 NAVEGACIÓN APLICACIÓN:</p>", unsafe_allow_html=True)
     menu = st.selectbox(
         "Selecciona una pestaña:",
@@ -167,7 +177,12 @@ else:
         if modo_actual == "ing":
             st.markdown("### 📈 Añadir Fondos")
             b_i = st.selectbox("¿Cuenta?", BANCOS, key="sel_ing")
-            m_i = st.number_input("Monto:", min_value=0, step=1000, key="num_ing")
+            
+            # Formato de texto seguro
+            txt_m_i = st.text_input("Monto en COP (Puedes usar puntos):", placeholder="Ej: 50.000", key="txt_num_ing")
+            m_i = procesar_monto_texto(txt_m_i)
+            st.caption(f"👀 Valor detectado: **${m_i:,} COP**")
+            
             d_i = st.text_input("Detalle:", key="txt_ing")
             if st.button("Guardar Ingreso 📈", use_container_width=True):
                 if m_i > 0:
@@ -176,12 +191,18 @@ else:
                     hist.append({"tipo": "Ingreso", "banco": b_i, "monto": m_i, "cat": "Ingreso", "det": d_i if d_i else "Ingreso general"})
                     guardar_datos("hist", hist)
                     st.rerun()
+                else: st.error("Ingresa un monto válido.")
         
         elif modo_actual == "gas":
             st.markdown("### 📉 Registrar Gasto")
             b_g = st.selectbox("¿Cuenta?", BANCOS, key="sel_gas")
             cat_g = st.selectbox("Categoría:", CATEGORIAS, key="sel_cat")
-            m_g = st.number_input("Monto:", min_value=0, step=1000, key="num_gas")
+            
+            # Formato de texto seguro
+            txt_m_g = st.text_input("Monto en COP (Puedes usar puntos):", placeholder="Ej: 15.000", key="txt_num_gas")
+            m_g = procesar_monto_texto(txt_m_g)
+            st.caption(f"👀 Valor detectado: **${m_g:,} COP**")
+            
             paga_d = st.checkbox("¿Paga deuda?")
             id_d = st.text_input("ID Deuda:").upper().strip() if paga_d else ""
             if st.button("Confirmar Gasto 📉", use_container_width=True):
@@ -202,6 +223,7 @@ else:
                     guardar_datos("hist", hist)
                     st.rerun()
                 elif m_g > saldos[b_g]: st.error("Saldo insuficiente.")
+                else: st.error("Ingresa un monto válido.")
         
         elif modo_actual == "meta":
             st.markdown("### 🎯 Guardar para una Meta")
@@ -210,7 +232,12 @@ else:
             else:
                 b_m = st.selectbox("¿De qué cuenta sale el ahorro?", BANCOS, key="sel_b_meta")
                 meta_dest = st.selectbox("¿Para qué meta es?", list(metas.keys()))
-                m_m = st.number_input("Monto a ahorrar:", min_value=0, step=1000)
+                
+                # Formato de texto seguro
+                txt_m_m = st.text_input("Monto a ahorrar (Puedes usar puntos):", placeholder="Ej: 100.000", key="txt_num_met")
+                m_m = procesar_monto_texto(txt_m_m)
+                st.caption(f"👀 Valor detectado: **${m_m:,} COP**")
+                
                 if st.button("Confirmar Ahorro 🚀", use_container_width=True):
                     if m_m > 0 and m_m <= saldos[b_m]:
                         saldos[b_m] -= m_m
@@ -221,14 +248,20 @@ else:
                         guardar_datos("hist", hist)
                         st.success(f"¡Ahorro para {meta_dest} registrado!")
                         st.rerun()
-                    else: st.error("Saldo insuficiente.")
+                    elif m_m > saldos[b_m]: st.error("Saldo insuficiente.")
+                    else: st.error("Ingresa un monto válido.")
 
     # --- SECCIÓN 4: DEUDAS ---
     elif menu == "📌 Control de Deudas":
         st.subheader("Gestión de Deudas")
         id_n = st.text_input("ID Único Deuda:", placeholder="EJ: JUAN1").upper().strip()
         concepto_n = st.text_input("Concepto o Razón:")
-        m_n = st.number_input("Monto Inicial:", min_value=0, step=1000)
+        
+        # Formato de texto seguro
+        txt_m_n = st.text_input("Monto Inicial (Puedes usar puntos):", placeholder="Ej: 200.000", key="txt_num_deu")
+        m_n = procesar_monto_texto(txt_m_n)
+        st.caption(f"👀 Valor detectado: **${m_n:,} COP**")
+        
         if st.button("Crear Deuda 📌", use_container_width=True):
             if id_n and m_n > 0 and concepto_n:
                 if id_n in deudas: st.error("ID ya existe.")
@@ -236,6 +269,7 @@ else:
                     deudas[id_n] = {"concepto": concepto_n, "monto_inicial": m_n, "monto_pendiente": m_n, "estado": "activa", "historial_pagos": [f"Creada por ${m_n:,}"]}
                     guardar_datos("deudas", deudas)
                     st.rerun()
+            else: st.error("Verifica que todos los campos estén llenos y el monto sea válido.")
 
         st.write("---")
         d_act = {k: v for k, v in deudas.items() if v.get('estado', 'activa') == "activa"}
@@ -261,13 +295,19 @@ else:
         st.subheader("🎯 Objetivos de Ahorro")
         with st.expander("✨ Crear Nueva Meta"):
             nombre_m = st.text_input("¿Qué quieres comprar?", placeholder="Ej: PlayStation 6").strip()
-            total_m = st.number_input("¿Cuánto cuesta?", min_value=0, step=50000)
+            
+            # Formato de texto seguro
+            txt_total_m = st.text_input("¿Cuánto cuesta? (Puedes usar puntos):", placeholder="Ej: 2.500.000", key="txt_num_met_crear")
+            total_m = procesar_monto_texto(txt_total_m)
+            st.caption(f"👀 Valor detectado: **${total_m:,} COP**")
+            
             if st.button("Establecer Meta 🎯", use_container_width=True):
                 if nombre_m and total_m > 0:
                     metas[nombre_m] = {"objetivo": total_m, "ahorrado": 0}
                     guardar_datos("metas", metas)
                     st.success(f"Meta '{nombre_m}' creada.")
                     st.rerun()
+                else: st.error("Verifica los datos ingresados.")
 
         st.write("---")
         if not metas: st.info("Aún no tienes metas creadas.")
@@ -293,7 +333,7 @@ else:
         if st.button("🗑️ Resetear todas las Metas", use_container_width=True):
             if os.path.exists(ARCH_METAS): os.remove(ARCH_METAS); st.rerun()
 
-    # --- BOTÓN DE SALIDA INDEPENDIENTE AL FINAL ---
+    # --- BOTÓN DE SALIDA ---
     st.write("---")
     if st.button("🚪 Salir de la Cuenta", use_container_width=True):
         st.session_state.usuario_logeado = None
