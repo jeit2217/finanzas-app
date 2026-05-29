@@ -2,6 +2,7 @@ import streamlit as st
 import os
 import json
 import pandas as pd
+import re
 from datetime import datetime, timedelta
 
 # --- CONFIGURACIÓN ---
@@ -122,9 +123,44 @@ def cargar_usuarios():
 
 def procesar_monto_texto(texto):
     if not texto: return 0
-    limpio = texto.replace(".", "").replace(",", "").replace("$", "").strip()
+    limpio = str(texto).replace(".", "").replace(",", "").replace("$", "").strip()
     if limpio.isdigit(): return int(limpio)
     return 0
+
+# --- LÓGICA DEL EXTRACTOR DE TEXTO (PARSER) ---
+def parsear_notificacion_bancaria(texto):
+    if not texto: return None, None, ""
+    
+    texto_minuscula = texto.lower()
+    banco_detectado = "Efectivo" # Valor por defecto
+    
+    # 1. Identificación de Entidad Bancaria
+    if "nequi" in texto_minuscula or "¡listo!" in texto_minuscula:
+        banco_detectado = "Nequi"
+    elif "bancolombia" in texto_minuscula:
+        banco_detectado = "Nequi" # Mapeado a tu lista disponible (puedes ajustar si usas Nequi para Bancolombia)
+    elif "daviplata" in texto_minuscula:
+        banco_detectado = "Daviplata"
+    elif "nu:" in texto_minuscula or "nu colombia" in texto_minuscula or "nubank" in texto_minuscula:
+        banco_detectado = "Nu"
+        
+    # 2. Extracción del monto usando Expresiones Regulares (Busca el símbolo $ seguido de números, puntos o comas)
+    patron_monto = r'\$\s?([\d.,]+)'
+    coincidencia = re.search(patron_monto, texto)
+    monto_detectado = 0
+    if coincidencia:
+        monto_detectado = procesar_monto_texto(coincidencia.group(1))
+        
+    # 3. Intentar extraer un detalle básico (Donde se compró)
+    detalle = "Gasto Autodetectado"
+    if "en " in texto_minuscula:
+        partes = texto.split("en ")
+        if len(partes) > 1: detalle = f"Compra en {partes[1].strip()[:30]}"
+    elif "a " in texto_minuscula:
+        partes = texto.split("a ")
+        if len(partes) > 1: detalle = f"Pago a {partes[1].strip()[:30]}"
+        
+    return banco_detectado, monto_detectado, detalle
 
 # --- INICIALIZACIÓN DE VARIABLES EXPRÉS ---
 if 'usuario_logeado' not in st.session_state: st.session_state.usuario_logeado = None
@@ -134,6 +170,11 @@ if 'val_express_met' not in st.session_state: st.session_state.val_express_met =
 if 'val_express_tra' not in st.session_state: st.session_state.val_express_tra = 0
 if 'val_express_deu' not in st.session_state: st.session_state.val_express_deu = 0
 if 'val_express_mcrear' not in st.session_state: st.session_state.val_express_mcrear = 0
+
+# Variables temporales para el autocompletado del scanner SMS
+if 'scan_monto' not in st.session_state: st.session_state.scan_monto = ""
+if 'scan_banco' not in st.session_state: st.session_state.scan_banco = "Efectivo"
+if 'scan_detalle' not in st.session_state: st.session_state.scan_detalle = ""
 
 # --- LOGIN ---
 if st.session_state.usuario_logeado is None:
@@ -324,10 +365,25 @@ else:
         elif modo_actual == "gas":
             st.write("### 📉 Registrar Gasto")
             
-            # --- NUEVA LÓGICA DE ALERTA PSICOLÓGICA QUINCENAL ---
-            txt_m_g = st.text_input("Monto en COP:", key="monto_gasto_realtime")
+            # --- NUEVO LECTOR DE NOTIFICACIONES / SMS DE BANCOS ---
+            with st.expander("📥 Lector de Notificaciones / SMS Bancarios (Copia y Pega)"):
+                sms_texto = st.text_area("Pega aquí la notificación o mensaje de tu banco:")
+                if st.button("Procesar Mensaje ⚡", use_container_width=True):
+                    if sms_texto:
+                        bco_p, mnto_p, dtl_p = parsear_notificacion_bancaria(sms_texto)
+                        if mnto_p > 0:
+                            st.session_state.scan_monto = f"{mnto_p:,}"
+                            st.session_state.scan_banco = bco_p
+                            st.session_state.scan_detalle = dtl_p
+                            st.success(f"¡Datos extraídos! Banco: {bco_p} | Monto: ${mnto_p:,}")
+                        else:
+                            st.error("No se pudo extraer ningún valor en pesos ($) del mensaje.")
+            
+            # Formulario de gasto real
+            txt_m_g = st.text_input("Monto en COP:", value=st.session_state.scan_monto, key="monto_gasto_realtime")
             m_g_temp = procesar_monto_texto(txt_m_g)
             
+            # --- ALERTA PSICOLÓGICA QUINCENAL ---
             if config_trabajo and m_g_temp > 0:
                 sueldo_quincenal = config_trabajo.get("sueldo", 0)
                 horas_quincenales = config_trabajo.get("horas", 80)
@@ -335,7 +391,6 @@ else:
                     valor_hora = sueldo_quincenal / horas_quincenales
                     horas_necesarias = m_g_temp / valor_hora
                     
-                    # Adaptación de mensajes a escalas lógicas quincenales (Horas -> Días -> Quincenas)
                     if horas_necesarias >= horas_quincenales:
                         quincenas = horas_necesarias / horas_quincenales
                         msg_psico = f"⏳ Alerta: Este gasto equivale a **{quincenas:.1f} quincenas** de tu salario de trabajo."
@@ -348,15 +403,23 @@ else:
                     st.markdown(f'<div class="alerta-psicologica">🛒 {msg_psico}<br><span style="font-size:0.75rem; opacity:0.8;">¿Realmente vale la pena cambiar ese esfuerzo de tu quincena por este artículo? 🤔</span></div>', unsafe_allow_html=True)
 
             with st.form("form_gasto", clear_on_submit=True):
-                b_g = st.selectbox("¿De dónde sale el dinero?", BANCOS)
+                # Índice por defecto según el banco escaneado
+                idx_banco_por_defecto = BANCOS.index(st.session_state.scan_banco) if st.session_state.scan_banco in BANCOS else 0
+                
+                b_g = st.selectbox("¿De dónde sale el dinero?", BANCOS, index=idx_banco_por_defecto)
                 cat_g = st.selectbox("Categoría:", CATEGORIAS)
-                det_g = st.text_input("Detalle del gasto:")
+                det_g = st.text_input("Detalle del gasto:", value=st.session_state.scan_detalle)
                 
                 if st.form_submit_button("Confirmar Gasto 📉", use_container_width=True):
                     if m_g_temp > 0 and m_g_temp <= saldos[b_g]:
                         saldos[b_g] -= m_g_temp; guardar_saldo(b_g, saldos[b_g])
                         hist.append({"tipo": "Gasto", "banco": b_g, "monto": m_g_temp, "cat": cat_g, "det": det_g if det_g else f"Gasto en {cat_g}", "fecha": hoy_str})
-                        guardar_datos("hist", hist); st.rerun()
+                        guardar_datos("hist", hist)
+                        # Limpiar caché del scanner al guardar de forma exitosa
+                        st.session_state.scan_monto = ""
+                        st.session_state.scan_banco = "Efectivo"
+                        st.session_state.scan_detalle = ""
+                        st.rerun()
                     elif m_g_temp > saldos[b_g]:
                         st.error("❌ No tienes fondos suficientes en esa cuenta.")
 
@@ -474,13 +537,12 @@ else:
                     if st.button(f"Eliminar Límite {c}: ${m:,} COP", key=f"del_lim_{c}", use_container_width=True):
                         del limites[c]; guardar_datos("limites", limites); st.rerun()
                         
-        # --- CAMPOS ACTUALIZADOS A MODELO QUINCENAL ---
         st.write("---")
         st.write("### ⏳ Configuración de Psicología del Gasto (Quincenal)")
         st.write("Introduce tus ingresos y tiempos medidos por quincena:")
         
         sueldo_actual_conf = config_trabajo.get("sueldo", 0)
-        horas_actual_conf = config_trabajo.get("horas", 80) # 80 horas quincenales por defecto (40h semanales)
+        horas_actual_conf = config_trabajo.get("horas", 80)
         
         with st.form("form_psico_trabajo"):
             txt_sueldo = st.text_input("¿Cuánto recibes neto en cada QUINCENA (COP)?", value=f"{sueldo_actual_conf:,}" if sueldo_actual_conf else "")
