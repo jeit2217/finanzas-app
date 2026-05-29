@@ -20,7 +20,7 @@ st.markdown("""
     .stButton button { min-height: 40px !important; border-radius: 10px !important; }
     .contenedor-bancos { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
 
-    /* --- REGLES ESPECÍFICAS PARA CELULARES (Pantallas menores a 768px) --- */
+    /* --- REGLAS ESPECÍFICAS PARA CELULARES (Pantallas menores a 768px) --- */
     @media (max-width: 768px) {
         .block-container { 
             padding-top: 0.6rem !important; 
@@ -420,12 +420,16 @@ else:
         st.write("#### 📋 Cuentas Pendientes")
         for k, v in d_act.items():
             with st.expander(f"🔴 {k} | Debe: ${v['monto_pendiente']:,}"):
-                st.write(f"**Concepto:** {v['concepto']}"); [st.write(f"• {p}") for p in v['historial_pagos']]
+                st.write(f"**Concepto:** {v['concepto']}")
+                for p in v['historial_pagos']:
+                    st.write(f"• {p}")
         
         st.write("#### ✅ Pagadas")
         for k, v in d_pag.items():
             with st.expander(f"🟢 {k} [Cerrada]"):
-                st.write(f"**Concepto:** {v['concepto']}"); [st.write(f"• {p}") for p in v['historial_pagos']]
+                st.write(f"**Concepto:** {v['concepto']}")
+                for p in v['historial_pagos']:
+                    st.write(f"• {p}")
 
         st.write("---")
         if st.button("🗑️ Borrar Registro de Deudas", use_container_width=True):
