@@ -29,6 +29,19 @@ if 'usuario_logeado' not in st.session_state:
 # --- PANTALLA PRINCIPAL: REGISTRO / LOGIN ---
 st.title("📱 Mi Control de Finanzas Pro")
 
+# --- TRUCO PARA ESCONDER EL BOTÓN DE GITHUB Y EL MENÚ DE EDITAR ---
+st.markdown(
+    """
+    <style>
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    header {visibility: hidden;}
+    .stAppDeployButton {display:none;}
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
 if st.session_state.usuario_logeado is None:
     # Pestañas para separar el Inicio de Sesión del Registro
     pestaña_login, pestaña_registro = st.tabs(["🔑 Iniciar Sesión", "📝 Registrarse"])
