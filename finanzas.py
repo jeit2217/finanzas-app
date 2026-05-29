@@ -45,7 +45,14 @@ def procesar_monto_texto(texto):
         return int(limpio)
     return 0
 
+# --- INICIALIZACIÓN DE VALORES EXPRÉS ---
 if 'usuario_logeado' not in st.session_state: st.session_state.usuario_logeado = None
+if 'val_express_ing' not in st.session_state: st.session_state.val_express_ing = 0
+if 'val_express_gas' not in st.session_state: st.session_state.val_express_gas = 0
+if 'val_express_met' not in st.session_state: st.session_state.val_express_met = 0
+if 'val_express_tra' not in st.session_state: st.session_state.val_express_tra = 0
+if 'val_express_deu' not in st.session_state: st.session_state.val_express_deu = 0
+if 'val_express_mcrear' not in st.session_state: st.session_state.val_express_mcrear = 0
 
 # --- LOGIN ---
 if st.session_state.usuario_logeado is None:
@@ -177,10 +184,32 @@ else:
         st.write("---")
         
         if modo_actual == "ing":
+            st.markdown("### 📈 Añadir Fondos")
+            # Fila de Botones Exprés fuera del form para actualizar el estado instantáneamente
+            st.caption("⚡ Teclado Exprés (Toca para sumar):")
+            b1, b2, b3, b4, b5, b6, b_clr = st.columns([1,1,1,1,1,1,1.5])
+            with b1:
+                if st.button("+2k", key="i_2k"): st.session_state.val_express_ing += 2000
+            with b2:
+                if st.button("+5k", key="i_5k"): st.session_state.val_express_ing += 5000
+            with b3:
+                if st.button("+10k", key="i_10k"): st.session_state.val_express_ing += 10000
+            with b4:
+                if st.button("+20k", key="i_20k"): st.session_state.val_express_ing += 20000
+            with b5:
+                if st.button("+50k", key="i_50k"): st.session_state.val_express_ing += 50000
+            with b6:
+                if st.button("+100k", key="i_100k"): st.session_state.val_express_ing += 100000
+            with b_clr:
+                if st.button("🧹 Borrar", key="i_clr"): st.session_state.val_express_ing = 0
+
+            # Formulario
             with st.form("form_ingreso", clear_on_submit=True):
-                st.markdown("### 📈 Añadir Fondos")
                 b_i = st.selectbox("¿Cuenta?", BANCOS)
-                txt_m_i = st.text_input("Monto en COP (Ej: 50.000 o 50000):")
+                
+                # Carga el acumulado del teclado exprés como valor inicial
+                val_inicial = f"{st.session_state.val_express_ing:,}" if st.session_state.val_express_ing > 0 else ""
+                txt_m_i = st.text_input("Monto en COP:", value=val_inicial, placeholder="Escribe o usa los botones exprés")
                 d_i = st.text_input("Detalle:")
                 
                 if st.form_submit_button("Guardar Ingreso 📈", use_container_width=True):
@@ -190,15 +219,35 @@ else:
                         guardar_saldo(b_i, saldos[b_i])
                         hist.append({"tipo": "Ingreso", "banco": b_i, "monto": m_i, "cat": "Ingreso", "det": d_i if d_i else "Ingreso general"})
                         guardar_datos("hist", hist)
+                        st.session_state.val_express_ing = 0 # Reset exprés
                         st.rerun()
                     else: st.error("Monto inválido.")
         
         elif modo_actual == "gas":
+            st.markdown("### 📉 Registrar Gasto")
+            st.caption("⚡ Teclado Exprés (Toca para sumar):")
+            b1, b2, b3, b4, b5, b6, b_clr = st.columns([1,1,1,1,1,1,1.5])
+            with b1:
+                if st.button("+2k", key="g_2k"): st.session_state.val_express_gas += 2000
+            with b2:
+                if st.button("+5k", key="g_5k"): st.session_state.val_express_gas += 5000
+            with b3:
+                if st.button("+10k", key="g_10k"): st.session_state.val_express_gas += 10000
+            with b4:
+                if st.button("+20k", key="g_20k"): st.session_state.val_express_gas += 20000
+            with b5:
+                if st.button("+50k", key="g_50k"): st.session_state.val_express_gas += 50000
+            with b6:
+                if st.button("+100k", key="g_100k"): st.session_state.val_express_gas += 100000
+            with b_clr:
+                if st.button("🧹 Borrar", key="g_clr"): st.session_state.val_express_gas = 0
+
             with st.form("form_gasto", clear_on_submit=True):
-                st.markdown("### 📉 Registrar Gasto")
                 b_g = st.selectbox("¿Cuenta?", BANCOS)
                 cat_g = st.selectbox("Categoría:", CATEGORIAS)
-                txt_m_g = st.text_input("Monto en COP (Ej: 15.000 o 15000):")
+                
+                val_inicial = f"{st.session_state.val_express_gas:,}" if st.session_state.val_express_gas > 0 else ""
+                txt_m_g = st.text_input("Monto en COP:", value=val_inicial, placeholder="Escribe o usa los botones exprés")
                 paga_d = st.checkbox("¿Paga deuda?")
                 id_d = st.text_input("ID Deuda (Si aplica):").upper().strip()
                 
@@ -219,6 +268,7 @@ else:
                         guardar_saldo(b_g, saldos[b_g])
                         hist.append({"tipo": "Gasto", "banco": b_g, "monto": m_g, "cat": cat_g, "det": f"Abono ID: {id_d}" if paga_d else f"Gasto: {cat_g}"})
                         guardar_datos("hist", hist)
+                        st.session_state.val_express_gas = 0 # Reset exprés
                         st.rerun()
                     elif m_g > saldos[b_g]: st.error("Saldo insuficiente.")
                     else: st.error("Monto inválido.")
@@ -227,11 +277,30 @@ else:
             if not metas:
                 st.warning("Primero crea una meta en la pestaña 🎯 Mis Metas")
             else:
+                st.markdown("### 🎯 Guardar para una Meta")
+                st.caption("⚡ Teclado Exprés (Toca para sumar):")
+                b1, b2, b3, b4, b5, b6, b_clr = st.columns([1,1,1,1,1,1,1.5])
+                with b1:
+                    if st.button("+2k", key="m_2k"): st.session_state.val_express_met += 2000
+                with b2:
+                    if st.button("+5k", key="m_5k"): st.session_state.val_express_met += 5000
+                with b3:
+                    if st.button("+10k", key="m_10k"): st.session_state.val_express_met += 10000
+                with b4:
+                    if st.button("+20k", key="m_20k"): st.session_state.val_express_met += 20000
+                with b5:
+                    if st.button("+50k", key="m_50k"): st.session_state.val_express_met += 50000
+                with b6:
+                    if st.button("+100k", key="m_100k"): st.session_state.val_express_met += 100000
+                with b_clr:
+                    if st.button("🧹 Borrar", key="m_clr"): st.session_state.val_express_met = 0
+
                 with st.form("form_meta", clear_on_submit=True):
-                    st.markdown("### 🎯 Guardar para una Meta")
                     b_m = st.selectbox("¿De qué cuenta sale el ahorro?", BANCOS)
                     meta_dest = st.selectbox("¿Para qué meta es?", list(metas.keys()))
-                    txt_m_m = st.text_input("Monto a ahorrar (Ej: 100.000 o 10000):")
+                    
+                    val_inicial = f"{st.session_state.val_express_met:,}" if st.session_state.val_express_met > 0 else ""
+                    txt_m_m = st.text_input("Monto a ahorrar:", value=val_inicial, placeholder="Escribe o usa los botones exprés")
                     
                     if st.form_submit_button("Confirmar Ahorro 🚀", use_container_width=True):
                         m_m = procesar_monto_texto(txt_m_m)
@@ -242,47 +311,79 @@ else:
                             guardar_datos("metas", metas)
                             hist.append({"tipo": "Meta", "banco": b_m, "monto": m_m, "cat": "Ahorro", "det": meta_dest})
                             guardar_datos("hist", hist)
+                            st.session_state.val_express_met = 0 # Reset exprés
                             st.rerun()
                         elif m_m > saldos[b_m]: st.error("Saldo insuficiente.")
                         else: st.error("Monto inválido.")
 
-        # --- NUEVO MODO: TRANSFERENCIAS ---
         elif modo_actual == "trans":
+            st.markdown("### 🔄 Transferir entre Cuentas")
+            st.caption("⚡ Teclado Exprés (Toca para sumar):")
+            b1, b2, b3, b4, b5, b6, b_clr = st.columns([1,1,1,1,1,1,1.5])
+            with b1:
+                if st.button("+2k", key="t_2k"): st.session_state.val_express_tra += 2000
+            with b2:
+                if st.button("+5k", key="t_5k"): st.session_state.val_express_tra += 5000
+            with b3:
+                if st.button("+10k", key="t_10k"): st.session_state.val_express_tra += 10000
+            with b4:
+                if st.button("+20k", key="t_20k"): st.session_state.val_express_tra += 20000
+            with b5:
+                if st.button("+50k", key="t_50k"): st.session_state.val_express_tra += 50000
+            with b6:
+                if st.button("+100k", key="t_100k"): st.session_state.val_express_tra += 100000
+            with b_clr:
+                if st.button("🧹 Borrar", key="t_clr"): st.session_state.val_express_tra = 0
+
             with st.form("form_transferencia", clear_on_submit=True):
-                st.markdown("### 🔄 Transferir entre Cuentas")
                 b_origen = st.selectbox("¿De qué cuenta sale la plata?", BANCOS, key="origen")
                 b_destino = st.selectbox("¿A qué cuenta entra la plata?", BANCOS, key="destino")
-                txt_m_t = st.text_input("Monto a transferir (Ej: 50.000 o 50000):")
+                
+                val_inicial = f"{st.session_state.val_express_tra:,}" if st.session_state.val_express_tra > 0 else ""
+                txt_m_t = st.text_input("Monto a transferir:", value=val_inicial, placeholder="Escribe o usa los botones exprés")
                 
                 if st.form_submit_button("Confirmar Transferencia 🔄", use_container_width=True):
                     m_t = procesar_monto_texto(txt_m_t)
                     if b_origen == b_destino:
                         st.error("La cuenta de origen y destino no pueden ser la misma.")
                     elif m_t > 0 and m_t <= saldos[b_origen]:
-                        # Ejecutar transferencia matemática
                         saldos[b_origen] -= m_t
                         saldos[b_destino] += m_t
-                        
-                        # Guardar saldos modificados
                         guardar_saldo(b_origen, saldos[b_origen])
                         guardar_saldo(b_destino, saldos[b_destino])
-                        
-                        # Registrar en historial (usamos 'cat' para almacenar el banco destino sin romper la estructura de la base de datos)
                         hist.append({"tipo": "Transferencia", "banco": b_origen, "monto": m_t, "cat": b_destino, "det": f"Transferencia de {b_origen} a {b_destino}"})
                         guardar_datos("hist", hist)
+                        st.session_state.val_express_tra = 0 # Reset exprés
                         st.rerun()
-                    elif m_t > saldos[b_origen]: 
-                        st.error(f"Saldo insuficiente en {b_origen}.")
-                    else: 
-                        st.error("Monto inválido.")
+                    elif m_t > saldos[b_origen]: st.error(f"Saldo insuficiente en {b_origen}.")
+                    else: st.error("Monto inválido.")
 
     # --- SECCIÓN 4: DEUDAS ---
     elif menu == "📌 Control de Deudas":
+        st.subheader("Gestión de Deudas")
+        st.caption("⚡ Teclado Exprés (Toca para sumar):")
+        b1, b2, b3, b4, b5, b6, b_clr = st.columns([1,1,1,1,1,1,1.5])
+        with b1:
+            if st.button("+2k", key="d_2k"): st.session_state.val_express_deu += 2000
+        with b2:
+            if st.button("+5k", key="d_5k"): st.session_state.val_express_deu += 5000
+        with b3:
+            if st.button("+10k", key="d_10k"): st.session_state.val_express_deu += 10000
+        with b4:
+            if st.button("+20k", key="d_20k"): st.session_state.val_express_deu += 20000
+        with b5:
+            if st.button("+50k", key="d_50k"): st.session_state.val_express_deu += 50000
+        with b6:
+            if st.button("+100k", key="d_100k"): st.session_state.val_express_deu += 100000
+        with b_clr:
+            if st.button("🧹 Borrar", key="d_clr"): st.session_state.val_express_deu = 0
+
         with st.form("form_crear_deuda", clear_on_submit=True):
-            st.subheader("Gestión de Deudas")
             id_n = st.text_input("ID Único Deuda:", placeholder="EJ: JUAN1").upper().strip()
             concepto_n = st.text_input("Concepto o Razón:")
-            txt_m_n = st.text_input("Monto Inicial (Ej: 200.000 o 20000):")
+            
+            val_inicial = f"{st.session_state.val_express_deu:,}" if st.session_state.val_express_deu > 0 else ""
+            txt_m_n = st.text_input("Monto Inicial:", value=val_inicial, placeholder="Escribe o usa los botones exprés")
             
             if st.form_submit_button("Crear Deuda 📌", use_container_width=True):
                 m_n = procesar_monto_texto(txt_m_n)
@@ -291,6 +392,7 @@ else:
                     else:
                         deudas[id_n] = {"concepto": concepto_n, "monto_inicial": m_n, "monto_pendiente": m_n, "estado": "activa", "historial_pagos": [f"Creada por ${m_n:,}"]}
                         guardar_datos("deudas", deudas)
+                        st.session_state.val_express_deu = 0 # Reset exprés
                         st.session_state["deuda_creada_ok"] = True
                 else: st.error("Por favor completa los datos con un monto válido.")
         
@@ -318,15 +420,37 @@ else:
     # --- SECCIÓN 5: METAS ---
     elif menu == "🎯 Mis Metas":
         st.subheader("🎯 Objetivos de Ahorro")
+        
+        st.markdown("##### ✨ Crear Nueva Meta")
+        st.caption("⚡ Teclado Exprés (Toca para sumar):")
+        b1, b2, b3, b4, b5, b6, b_clr = st.columns([1,1,1,1,1,1,1.5])
+        with b1:
+            if st.button("+2k", key="mc_2k"): st.session_state.val_express_mcrear += 2000
+        with b2:
+            if st.button("+5k", key="mc_5k"): st.session_state.val_express_mcrear += 5000
+        with b3:
+            if st.button("+10k", key="mc_10k"): st.session_state.val_express_mcrear += 10000
+        with b4:
+            if st.button("+20k", key="mc_20k"): st.session_state.val_express_mcrear += 20000
+        with b5:
+            if st.button("+50k", key="mc_50k"): st.session_state.val_express_mcrear += 50000
+        with b6:
+            if st.button("+100k", key="mc_100k"): st.session_state.val_express_mcrear += 100000
+        with b_clr:
+            if st.button("🧹 Borrar", key="mc_clr"): st.session_state.val_express_mcrear = 0
+
         with st.form("form_crear_meta", clear_on_submit=True):
             nombre_m = st.text_input("¿Qué quieres comprar?", placeholder="Ej: PlayStation 6").strip()
-            txt_total_m = st.text_input("¿Cuánto cuesta? (Ej: 2.500.000 o 2500000):")
+            
+            val_inicial = f"{st.session_state.val_express_mcrear:,}" if st.session_state.val_express_mcrear > 0 else ""
+            txt_total_m = st.text_input("¿Cuánto cuesta?:", value=val_inicial)
             
             if st.form_submit_button("Establecer Meta 🎯", use_container_width=True):
                 total_m = procesar_monto_texto(txt_total_m)
                 if nombre_m and total_m > 0:
                     metas[nombre_m] = {"objetivo": total_m, "ahorrado": 0}
                     guardar_datos("metas", metas)
+                    st.session_state.val_express_mcrear = 0 # Reset exprés
                     st.session_state["meta_creada_ok"] = True
                 else: st.error("Verifica los datos ingresados.")
         
