@@ -242,4 +242,10 @@ else:
                     nuevo_saldo_banco = saldo_actual_banco - monto_gasto
                     guardar_saldo_banco(banco_origen, nuevo_saldo_banco)
                     
-                    guardar_movimiento(f"📉 Gasto ({banco_origen}): -
+                    guardar_movimiento(f"📉 Gasto ({banco_origen}): -${monto_gasto:,} COP ({detalle_gasto})")
+                    st.error(f"🛑 Gasto de ${monto_gasto:,} COP descontado de {banco_origen}.")
+                    st.rerun()
+                else:
+                    st.warning(f"❌ Fondos insuficientes en {banco_origen}. Saldo disponible ahí: ${saldo_actual_banco:,} COP")
+            else:
+                st.warning("Por favor ingresa un valor válido.")
