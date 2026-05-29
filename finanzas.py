@@ -23,7 +23,7 @@ st.markdown("<style>.tarjeta-banco p {margin: 0 !important; font-size: 0.75rem; 
 st.markdown("<style>.tarjeta-banco h4 {margin: 5px 0 0 0 !important; font-size: 1.0rem; font-weight: 700; color: #457b9d !important;}</style>", unsafe_allow_html=True)
 
 st.markdown("<style>.item-historial { background-color: #1b1b1b; padding: 14px 18px; border-radius: 10px; margin-bottom: 10px; border-left: 6px solid #ccc; font-family: monospace; font-size: 0.95rem; box-shadow: 0px 4px 6px rgba(0,0,0,0.1);}</style>", unsafe_allow_html=True)
-st.markdown("<style>.ingreso-style { border-left-color: #2a9d8f !important; } .gasto-style { border-left-color: #e63946 !important; } .deuda-style { border-left-color: #f4a261 !important; } .pagada-style { border-left-color: #457b9d !important; }</style>", unsafe_allow_html=True)
+st.markdown("<style>.ingreso-style { border-left-color: #2a9d8f !important; } .gasto-style { border-left-color: #e63946 !important; } .deuda-style { border-left-color: #f4a261 !important; } .pagada-style { border-left-color: #457b9d !important; } .meta-style { border-left-color: #a29bfe !important; }</style>", unsafe_allow_html=True)
 
 # --- BASE DE DATOS ---
 ARCHIVO_USUARIOS = "usuarios_db.txt"
@@ -69,15 +69,21 @@ else:
     
     ARCH_HIST = f"{user}_hist.json"
     ARCH_DEUDAS = f"{user}_deudas_v2.json"
+    ARCH_METAS = f"{user}_metas.json" # Nuevo archivo de metas
 
     def cargar_datos(tipo):
-        p = f"{user}_{tipo}.json" if tipo == "hist" else ARCH_DEUDAS
+        if tipo == "hist": p = ARCH_HIST
+        elif tipo == "deudas": p = ARCH_DEUDAS
+        else: p = ARCH_METAS
+        
         if os.path.exists(p):
             with open(p, "r") as f: return json.load(f)
         return [] if tipo == "hist" else {}
 
     def guardar_datos(tipo, d):
-        p = f"{user}_{tipo}.json" if tipo == "hist" else ARCH_DEUDAS
+        if tipo == "hist": p = ARCH_HIST
+        elif tipo == "deudas": p = ARCH_DEUDAS
+        else: p = ARCH_METAS
         with open(p, "w") as f: json.dump(d, f)
 
     def cargar_saldo(b):
@@ -91,6 +97,7 @@ else:
 
     hist = cargar_datos("hist")
     deudas = cargar_datos("deudas")
+    metas = cargar_datos("metas")
     saldos = {b: cargar_saldo(b) for b in BANCOS}
     total_disponible = sum(saldos.values())
 
@@ -102,7 +109,7 @@ else:
         st.session_state.usuario_logeado = None
         st.rerun()
 
-    p_stats, p_historial, p_mov, p_deu = st.tabs(["📈 Estadísticas", "📊 Historial Completo", "💸 Registrar Movimientos", "📌 Deudas"])
+    p_stats, p_historial, p_mov, p_deu, p_metas = st.tabs(["📈 Stats", "📊 Historial", "💸 Movimientos", "📌 Deudas", "🎯 Metas"])
 
     # --- ESTADÍSTICAS ---
     with p_stats:
@@ -128,6 +135,8 @@ else:
             for h in reversed(hist):
                 if h['tipo'] == "Ingreso":
                     st.markdown(f'<div class="item-historial ingreso-style">📈 <b>Ingreso ({h["banco"]}):</b> +${h["monto"]:,} COP <br> 📝 {h["det"]}</div>', unsafe_allow_html=True)
+                elif h['tipo'] == "Meta":
+                    st.markdown(f'<div class="item-historial meta-style">🎯 <b>Ahorro Meta ({h["banco"]}):</b> -${h["monto"]:,} COP <br> 🚀 Para: {h["det"]}</div>', unsafe_allow_html=True)
                 else:
                     st.markdown(f'<div class="item-historial gasto-style">📉 <b>Gasto ({h["banco"]}):</b> -${h["monto"]:,} COP <br> 📁 Categoría: {h["cat"]} | {h["det"]}</div>', unsafe_allow_html=True)
             st.write("---")
@@ -135,20 +144,26 @@ else:
                 for b in BANCOS:
                     if os.path.exists(f"{user}_s_{b.lower()}.txt"): os.remove(f"{user}_s_{b.lower()}.txt")
                 if os.path.exists(ARCH_HIST): os.remove(ARCH_HIST)
+                if os.path.exists(ARCH_METAS): os.remove(ARCH_METAS)
                 st.rerun()
 
     # --- MOVIMIENTOS ---
     with p_mov:
-        c1, c2 = st.columns(2)
+        c1, c2, c3 = st.columns(3)
         with c1:
             if st.button("➕ Ingreso", use_container_width=True): st.session_state.modo = "ing"
         with c2:
             if st.button("➖ Gasto", use_container_width=True): st.session_state.modo = "gas"
+        with c3:
+            if st.button("🎯 Ahorrar", use_container_width=True): st.session_state.modo = "meta"
         
-        if st.session_state.get('modo', 'ing') == "ing":
-            b_i = st.selectbox("¿Cuenta?", BANCOS)
-            m_i = st.number_input("Monto:", min_value=0, step=1000)
-            d_i = st.text_input("Detalle:")
+        modo_actual = st.session_state.get('modo', 'ing')
+        
+        if modo_actual == "ing":
+            st.markdown("### 📈 Añadir Fondos")
+            b_i = st.selectbox("¿Cuenta?", BANCOS, key="sel_ing")
+            m_i = st.number_input("Monto:", min_value=0, step=1000, key="num_ing")
+            d_i = st.text_input("Detalle:", key="txt_ing")
             if st.button("Guardar Ingreso 📈", use_container_width=True):
                 if m_i > 0:
                     saldos[b_i] += m_i
@@ -156,10 +171,12 @@ else:
                     hist.append({"tipo": "Ingreso", "banco": b_i, "monto": m_i, "cat": "Ingreso", "det": d_i if d_i else "Ingreso general"})
                     guardar_datos("hist", hist)
                     st.rerun()
-        else:
-            b_g = st.selectbox("¿Cuenta?", BANCOS)
-            cat_g = st.selectbox("Categoría:", CATEGORIAS)
-            m_g = st.number_input("Monto:", min_value=0, step=1000)
+        
+        elif modo_actual == "gas":
+            st.markdown("### 📉 Registrar Gasto")
+            b_g = st.selectbox("¿Cuenta?", BANCOS, key="sel_gas")
+            cat_g = st.selectbox("Categoría:", CATEGORIAS, key="sel_cat")
+            m_g = st.number_input("Monto:", min_value=0, step=1000, key="num_gas")
             paga_d = st.checkbox("¿Paga deuda?")
             id_d = st.text_input("ID Deuda:").upper().strip() if paga_d else ""
             if st.button("Confirmar Gasto 📉", use_container_width=True):
@@ -180,8 +197,28 @@ else:
                     guardar_datos("hist", hist)
                     st.rerun()
                 elif m_g > saldos[b_g]: st.error("Saldo insuficiente.")
+        
+        elif modo_actual == "meta":
+            st.markdown("### 🎯 Guardar para una Meta")
+            if not metas:
+                st.warning("Primero crea una meta en la pestaña 🎯 Metas")
+            else:
+                b_m = st.selectbox("¿De qué cuenta sale el ahorro?", BANCOS, key="sel_b_meta")
+                meta_dest = st.selectbox("¿Para qué meta es?", list(metas.keys()))
+                m_m = st.number_input("Monto a ahorrar:", min_value=0, step=1000)
+                if st.button("Confirmar Ahorro 🚀", use_container_width=True):
+                    if m_m > 0 and m_m <= saldos[b_m]:
+                        saldos[b_m] -= m_m
+                        guardar_saldo(b_m, saldos[b_m])
+                        metas[meta_dest]['ahorrado'] += m_m
+                        guardar_datos("metas", metas)
+                        hist.append({"tipo": "Meta", "banco": b_m, "monto": m_m, "cat": "Ahorro", "det": meta_dest})
+                        guardar_datos("hist", hist)
+                        st.success(f"¡Ahorro para {meta_dest} registrado!")
+                        st.rerun()
+                    else: st.error("Saldo insuficiente en el banco seleccionado.")
 
-    # --- DEUDAS (CON BOTÓN DE BORRADO INDEPENDIENTE) ---
+    # --- DEUDAS ---
     with p_deu:
         st.subheader("📌 Registrar Nueva Deuda")
         id_n = st.text_input("ID Único:", placeholder="EJ: JUAN1").upper().strip()
@@ -211,9 +248,44 @@ else:
                 st.write(f"**Concepto:** {v['concepto']}"); [st.write(f"• {p}") for p in v['historial_pagos']]
 
         st.write("---")
-        # --- NUEVO BOTÓN SOLICITADO ---
         if st.button("🗑️ Limpiar Historial de Deudas", use_container_width=True):
-            if os.path.exists(ARCH_DEUDAS):
-                os.remove(ARCH_DEUDAS)
-                st.success("Historial de deudas borrado.")
-                st.rerun()
+            if os.path.exists(ARCH_DEUDAS): os.remove(ARCH_DEUDAS); st.rerun()
+
+    # --- NUEVA PESTAÑA: METAS ---
+    with p_metas:
+        st.subheader("🎯 Mis Objetivos de Ahorro")
+        
+        with st.expander("✨ Crear Nueva Meta"):
+            nombre_m = st.text_input("¿Qué quieres comprar?", placeholder="Ej: PlayStation 6").strip()
+            total_m = st.number_input("¿Cuánto cuesta?", min_value=0, step=50000)
+            if st.button("Establecer Meta 🎯", use_container_width=True):
+                if nombre_m and total_m > 0:
+                    metas[nombre_m] = {"objetivo": total_m, "ahorrado": 0}
+                    guardar_datos("metas", metas)
+                    st.success(f"Meta '{nombre_m}' creada. ¡A por ella!")
+                    st.rerun()
+
+        st.write("---")
+        if not metas:
+            st.info("Aún no tienes metas creadas. ¡Define una arriba!")
+        else:
+            for m_nombre, m_datos in metas.items():
+                progreso = m_datos['ahorrado'] / m_datos['objetivo']
+                progreso = min(progreso, 1.0)
+                
+                st.markdown(f"#### {m_nombre}")
+                st.write(f"💰 ${m_datos['ahorrado']:,} de ${m_datos['objetivo']:,} COP")
+                st.progress(progreso)
+                
+                if progreso >= 1.0:
+                    st.balloons()
+                    st.success("¡META ALCANZADA! 🥳")
+                
+                if st.button(f"Eliminar Meta: {m_nombre}", key=f"del_{m_nombre}"):
+                    del metas[m_nombre]
+                    guardar_datos("metas", metas)
+                    st.rerun()
+
+        st.write("---")
+        if st.button("🗑️ Resetear todas las Metas", use_container_width=True):
+            if os.path.exists(ARCH_METAS): os.remove(ARCH_METAS); st.rerun()
