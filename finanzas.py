@@ -73,7 +73,7 @@ if st.session_state.usuario_logeado is None:
             else:
                 st.error("❌ Credenciales incorrectas. Verifica tus datos.")
 
-# --- PANTALLA PRINCIPAL ADENTRO DE LA APP (SIN MENÚ LATERAL INTERFERENTE) ---
+# --- PANTALLA PRINCIPAL ADENTRO DE LA APP ---
 else:
     user = st.session_state.usuario_logeado
 
@@ -104,7 +104,7 @@ else:
     if 'saldo' not in st.session_state:
         st.session_state.saldo = cargar_saldo()
 
-    # Encabezado superior con botón de salida discreto
+    # Encabezado superior con botón de salida
     col_user, col_logout = st.columns([3, 1])
     with col_user:
         st.markdown(f"👤 Hola, <b style='color:#457b9d;'>{user.capitalize()}</b>", unsafe_allow_html=True)
@@ -127,7 +127,7 @@ else:
         unsafe_allow_html=True
     )
 
-    # --- NUEVO MENÚ CENTRAL DE OPERACIONES (Pestañas fijas que nunca se ocultan) ---
+    # --- MENÚ CENTRAL DE OPERACIONES ---
     pest_panel, pest_ingreso, pest_gasto = st.tabs(["📊 Panel General", "📈 Registrar Ingreso", "📉 Registrar Gasto"])
 
     # --- CONTENIDO PESTAÑA 1: HISTORIAL ---
@@ -172,18 +172,36 @@ else:
         monto_gasto = st.number_input("Monto en pesos (COP):", min_value=0, step=1000, value=0, key="input_gasto")
         detalle_gasto = st.text_input("¿En qué gastaste este dinero? (Ej: Almuerzo, Transporte):", placeholder="Escribe el detalle aquí...", key="input_det_gasto").strip()
         
-        if st.button("Descontar Gasto 📉", use_container_width=True, key="btn_confirmar_gasto"):
-            if monto_gasto > 0:
-                if monto_gasto <= st.session_state.saldo:
-                    if detalle_gasto == "":
-                        detalle_gasto = "Gasto general"
-                        
-                    st.session_state.saldo -= monto_gasto
-                    guardar_saldo(st.session_state.saldo)
-                    guardar_movimiento(f"📉 Gasto: -${monto_gasto:,} COP ({detalle_gasto})")
-                    st.error(f"🛑 Gasto de ${monto_gasto:,} COP por '{detalle_gasto}' aplicado.")
-                    st.rerun()
+        # Estructura en paralelo: Botón Gasto (Izquierda) y Botón Borrar Historial (Derecha)
+        col_btn_gasto, col_btn_borrar = st.columns(2)
+        
+        with col_btn_gasto:
+            if st.button("Descontar Gasto 📉", use_container_width=True, key="btn_confirmar_gasto"):
+                if monto_gasto > 0:
+                    if monto_gasto <= st.session_state.saldo:
+                        if detalle_gasto == "":
+                            detalle_gasto = "Gasto general"
+                            
+                        st.session_state.saldo -= monto_gasto
+                        guardar_saldo(st.session_state.saldo)
+                        guardar_movimiento(f"📉 Gasto: -${monto_gasto:,} COP ({detalle_gasto})")
+                        st.error(f"🛑 Gasto de ${monto_gasto:,} COP por '{detalle_gasto}' aplicado.")
+                        st.rerun()
+                    else:
+                        st.warning("❌ Operación rechazada: Fondos insuficientes.")
                 else:
-                    st.warning("❌ Operación rechazada: Fondos insuficientes.")
-            else:
-                st.warning("Por favor ingresa un valor válido.")
+                    st.warning("Por favor ingresa un valor válido.")
+                    
+        with col_btn_borrar:
+            if st.button("Borrar Historial 🗑️", use_container_width=True, key="btn_borrar_todo"):
+                # 1. Eliminamos físicamente los archivos del usuario para limpiar la base de datos
+                if os.path.exists(ARCHIVO_SALDO):
+                    os.remove(ARCHIVO_SALDO)
+                if os.path.exists(ARCHIVO_HISTORIAL):
+                    os.remove(ARCHIVO_HISTORIAL)
+                
+                # 2. Reiniciamos los valores de la sesión actual
+                st.session_state.saldo = 0
+                
+                st.success("🗑️ ¡Historial y saldo eliminados por completo!")
+                st.rerun()
